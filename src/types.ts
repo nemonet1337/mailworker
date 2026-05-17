@@ -16,3 +16,12 @@ export type SessionUser = {
   display_name: string
   is_admin: 0 | 1
 }
+
+export type EmailRow = {
+  id: string
+  from_: string
+  subject: string
+  received_at: string
+  is_read: number
+  body_text?: string
+}

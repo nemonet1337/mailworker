@@ -1,0 +1,20 @@
+{
+  "name": "mail-app",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev":                  "wrangler dev --local",
+    "build":                "tsc --noEmit",
+    "deploy":               "wrangler deploy",
+    "db:migrate:local":     "wrangler d1 migrations apply mail-app-db --local",
+    "db:migrate:remote":    "wrangler d1 migrations apply mail-app-db --remote"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250514.0",
+    "typescript": "^5.8.0",
+    "wrangler": "^4.0.0"
+  }
+}
