@@ -4,8 +4,6 @@ import { Layout } from './gui/layout'
 import { LoginPage } from './gui/login'
 import { UsersPage } from './gui/admin/users'
 import { AddressesPage } from './gui/admin/addresses'
-import { InboxPage, MailDetailPartial } from './gui/inbox'
-import { SettingsPage } from './gui/settings'
 import { adminMiddleware } from './middleware/admin'
 import { authMiddleware } from './middleware/auth'
 import { AppEnv } from './types'
@@ -17,17 +15,9 @@ const app = new Hono<AppEnv>()
 app.use('*', authMiddleware)
 app.use('/admin/*', adminMiddleware)
 
-app.get('/', async (c) => {
-  const user = c.get('user')!
-  const emails = await c.env.DB.prepare(`
-    SELECT e.id, e.from_, e.subject, e.received_at, e.is_read
-    FROM emails e
-    JOIN mail_addresses m ON m.address = e.to_address
-    WHERE m.user_id = ?
-    ORDER BY e.received_at DESC
-    LIMIT 100
-  `).bind(user.id).all()
-  return c.html(<InboxPage currentUser={user} emails={emails.results as never[]} />)
+app.get('/', (c) => {
+  const user = c.get('user')
+  return c.html(<Layout title="受信箱" user={user} active="inbox"><h1 class="text-xl font-bold">受信箱</h1></Layout>)
 })
 
 app.get('/login', (c) => c.html(<LoginPage />))
@@ -53,51 +43,6 @@ app.post('/login', async (c) => {
 app.post('/logout', (c) => {
   deleteCookie(c, 'session', { path: '/' })
   c.header('HX-Redirect', '/login')
-  return c.body('')
-})
-
-app.get('/settings', (c) => {
-  const user = c.get('user')!
-  return c.html(<SettingsPage currentUser={user} />)
-})
-
-app.post('/settings/password', async (c) => {
-  const user = c.get('user')!
-  const body = await c.req.parseBody()
-  const currentPw = String(body.current_password || '')
-  const newPw = String(body.new_password || '')
-  if (newPw.length < 8) return c.html('<p class="text-red-500 text-sm mt-2">新しいパスワードは8文字以上にしてください</p>', 400)
-  const row = await c.env.DB.prepare('SELECT password_hash FROM users WHERE id = ?').bind(user.id).first<{password_hash:string}>()
-  if (!row || !(await verifyPassword(currentPw, row.password_hash))) {
-    return c.html('<p class="text-red-500 text-sm mt-2">現在のパスワードが正しくありません</p>', 401)
-  }
-  const newHash = await hashPassword(newPw)
-  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, user.id).run()
-  return c.html('<p class="text-green-600 text-sm mt-2">パスワードを変更しました</p>')
-})
-
-// GET /mail/:id — メール本文取得 (htmx パーシャル)
-app.get('/mail/:id', async (c) => {
-  const user = c.get('user')!
-  const email = await c.env.DB.prepare(`
-    SELECT e.from_, e.subject, e.received_at, e.body_text
-    FROM emails e
-    JOIN mail_addresses m ON m.address = e.to_address
-    WHERE e.id = ? AND m.user_id = ?
-  `).bind(c.req.param('id'), user.id).first<{from_:string;subject:string;received_at:string;body_text:string}>()
-  if (!email) return c.text('Not Found', 404)
-  return c.html(<MailDetailPartial {...email} />)
-})
-
-// POST /mail/:id/read — 既読フラグ更新
-app.post('/mail/:id/read', async (c) => {
-  const user = c.get('user')!
-  await c.env.DB.prepare(`
-    UPDATE emails SET is_read = 1
-    WHERE id = ? AND to_address IN (
-      SELECT address FROM mail_addresses WHERE user_id = ?
-    )
-  `).bind(c.req.param('id'), user.id).run()
   return c.body('')
 })
 
@@ -127,12 +72,7 @@ app.post('/admin/users', async (c) => {
 })
 
 app.post('/admin/users/:id/delete', async (c) => {
-  const currentUser = c.get('user')!
-  const targetId = c.req.param('id')
-  if (targetId === currentUser.id) {
-    return c.html('<p class="text-red-500 text-sm">自分自身は削除できません</p>', 400)
-  }
-  await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(targetId).run()
+  await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(c.req.param('id')).run()
   return c.html('')
 })
 
