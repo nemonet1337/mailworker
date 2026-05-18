@@ -1,0 +1,20 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id          = "jwt-secret"
+description = "Hardcoded JWT secret"
+regex       = '''(?i)(jwt[_-]?secret)\s*[=:]\s*['"]?[A-Za-z0-9+/]{16,}'''
+tags        = ["secret", "jwt"]
+
+[[rules]]
+id          = "cloudflare-api-token"
+description = "Cloudflare API token"
+regex       = '''(?i)(cf[_-]?api[_-]?token|cloudflare[_-]?api[_-]?token)\s*[=:]\s*['"]?[A-Za-z0-9_-]{40,}'''
+tags        = ["secret", "cloudflare"]
+
+[[rules]]
+id          = "dev-vars"
+description = ".dev.vars file (Wrangler local secrets)"
+path        = '''\.dev\.vars$'''
+tags        = ["secret", "wrangler"]

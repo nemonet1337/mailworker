@@ -1,0 +1,41 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 毎週月曜 09:00 JST (00:00 UTC)
+    - cron: "0 0 * * 1"
+
+jobs:
+  # ── 依存パッケージの既知脆弱性チェック ──────────────────────────
+  dependency-audit:
+    name: Dependency audit (npm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # high 以上の脆弱性があれば CI を失敗させる
+      # メール本文表示・JWT・Cookie 処理に関わるパッケージが対象
+      - run: npm audit --audit-level=high
+
+  # ── シークレット漏洩スキャン ────────────────────────────────────
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 全履歴をスキャン
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # .gitleaks.toml があればカスタムルールを適用
+        # JWT_SECRET / CF_API_TOKEN / MAIL ドメイン情報などを検出対象とする
