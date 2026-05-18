@@ -36,7 +36,7 @@ export const InboxPage: FC<{ currentUser: SessionUser; emails: EmailRow[] }> = (
               hx-get={`/mail/${m.id}`}
               hx-target="#mail-detail"
               hx-swap="innerHTML"
-              hx-on::after-request={`htmx.ajax('POST','/mail/${m.id}/read',{swap:'none'})`}
+              {...({'hx-on::after-request': `htmx.ajax('POST','/mail/${m.id}/read',{swap:'none'})`} as object)}
             >
               <td class="p-2">{m.is_read === 0 ? '●' : ''}</td>
               <td class="p-2">{m.from_}</td>

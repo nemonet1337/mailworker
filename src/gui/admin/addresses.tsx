@@ -8,7 +8,7 @@ export const AddressesPage: FC<{ currentUser: SessionUser; users: SessionUser[];
   <Layout title="メールアドレス管理" user={currentUser} active="addresses">
     <h1 class="text-2xl font-bold mb-4">メールアドレス管理</h1>
     <section class="bg-white border rounded p-4 mb-6">
-      <form hx-post="/admin/addresses" hx-target="#addr-form-result" hx-swap="innerHTML" hx-on::after-request="if(event.detail.successful) this.reset()" class="grid md:grid-cols-3 gap-3">
+      <form hx-post="/admin/addresses" hx-target="#addr-form-result" hx-swap="innerHTML" {...({'hx-on::after-request': "if(event.detail.successful) this.reset()"} as object)} class="grid md:grid-cols-3 gap-3">
         <div class="flex items-center gap-1">
           <input type="text" name="local" placeholder="username" required class="border rounded px-3 py-2" />
           <span class="text-gray-500">@{domain}</span>

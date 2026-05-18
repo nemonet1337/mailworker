@@ -11,7 +11,7 @@ export const SettingsPage: FC<{ currentUser: SessionUser }> = ({ currentUser }) 
         hx-post="/settings/password"
         hx-target="#pw-result"
         hx-swap="innerHTML"
-        hx-on::after-request="if(event.detail.successful) this.reset()"
+        {...({'hx-on::after-request': "if(event.detail.successful) this.reset()"} as object)}
         class="space-y-3"
       >
         <input name="current_password" type="password" required placeholder="現在のパスワード" class="w-full border rounded px-3 py-2" />

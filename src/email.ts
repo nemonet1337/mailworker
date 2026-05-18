@@ -1,8 +1,7 @@
-import { EmailMessage } from 'cloudflare:email'
 import { AppEnv } from './types'
 
 export default {
-  async email(message: EmailMessage, env: AppEnv['Bindings']): Promise<void> {
+  async email(message: ForwardableEmailMessage, env: AppEnv['Bindings']): Promise<void> {
     const rawEmail = await new Response(message.raw).text()
     const subject = message.headers.get('subject') ?? '(件名なし)'
     const bodyText = extractPlainText(rawEmail)

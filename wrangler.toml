@@ -2,13 +2,10 @@ name        = "mail-app"
 main        = "src/index.tsx"
 compatibility_date = "2024-09-23"
 
-[build]
-command = "npm run build"
-
 [[d1_databases]]
 binding       = "DB"
 database_name = "mail-app-db"
-database_id   = "77db1f7b-bc29-4422-9fa1-f1fa45ca1320"
+database_id   = "YOUR_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
 [vars]
