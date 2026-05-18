@@ -8,6 +8,10 @@ database_name = "mail-app-db"
 database_id   = "YOUR_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
+[[r2_buckets]]
+binding     = "BUCKET"
+bucket_name = "YOUR_R2_BUCKET_NAME"
+
 [vars]
 MAIL_DOMAIN = "yourdomain.com"
 

@@ -1,6 +1,7 @@
 export type AppEnv = {
   Bindings: {
     DB: D1Database
+    BUCKET: R2Bucket
     JWT_SECRET: string
     MAIL_DOMAIN: string
   }
@@ -24,4 +25,14 @@ export type EmailRow = {
   received_at: string
   is_read: number
   body_text?: string
+}
+
+export type AttachmentRow = {
+  id: string
+  email_id: string
+  filename: string
+  content_type: string
+  size: number
+  r2_key: string
+  created_at: string
 }

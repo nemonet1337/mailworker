@@ -10,6 +10,13 @@ type EmailRow = {
   is_read: number
 }
 
+type AttachmentItem = {
+  id: string
+  filename: string
+  content_type: string
+  size: number
+}
+
 export const InboxPage: FC<{ currentUser: SessionUser; emails: EmailRow[] }> = ({
   currentUser,
   emails,
@@ -56,11 +63,33 @@ export const MailDetailPartial: FC<{
   subject: string
   received_at: string
   body_text: string
-}> = ({ from_, subject, received_at, body_text }) => (
+  attachments: AttachmentItem[]
+}> = ({ from_, subject, received_at, body_text, attachments }) => (
   <div>
     <p class="text-xs text-gray-500 mb-1">{received_at.slice(0, 16).replace('T', ' ')}</p>
     <h2 class="text-lg font-bold mb-1">{subject}</h2>
     <p class="text-sm text-gray-600 mb-4">From: {from_}</p>
+    {attachments.length > 0 && (
+      <div class="flex flex-wrap gap-2 mb-4 pb-4 border-b">
+        {attachments.map((a) => (
+          <a
+            key={a.id}
+            href={`/attachments/${a.id}`}
+            class="inline-flex items-center gap-1 text-sm bg-gray-100 hover:bg-gray-200 border rounded px-3 py-1"
+          >
+            <span>📎</span>
+            <span>{a.filename}</span>
+            <span class="text-gray-400 text-xs ml-1">({formatSize(a.size)})</span>
+          </a>
+        ))}
+      </div>
+    )}
     <pre class="whitespace-pre-wrap text-sm border-t pt-4">{body_text}</pre>
   </div>
 )
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
+}

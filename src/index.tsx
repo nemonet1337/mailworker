@@ -86,7 +86,30 @@ app.get('/mail/:id', async (c) => {
     WHERE e.id = ? AND m.user_id = ?
   `).bind(c.req.param('id'), user.id).first<{from_:string;subject:string;received_at:string;body_text:string}>()
   if (!email) return c.text('Not Found', 404)
-  return c.html(<MailDetailPartial {...email} />)
+  const attachments = await c.env.DB.prepare(
+    'SELECT id, filename, content_type, size FROM attachments WHERE email_id = ?'
+  ).bind(c.req.param('id')).all()
+  return c.html(<MailDetailPartial {...email} attachments={attachments.results as never[]} />)
+})
+
+// GET /attachments/:id — 添付ファイルダウンロード
+app.get('/attachments/:id', async (c) => {
+  const user = c.get('user')!
+  const row = await c.env.DB.prepare(`
+    SELECT a.r2_key, a.filename, a.content_type
+    FROM attachments a
+    JOIN emails e ON e.id = a.email_id
+    JOIN mail_addresses m ON m.address = e.to_address
+    WHERE a.id = ? AND m.user_id = ?
+  `).bind(c.req.param('id'), user.id).first<{r2_key:string;filename:string;content_type:string}>()
+  if (!row) return c.text('Not Found', 404)
+
+  const object = await c.env.BUCKET.get(row.r2_key)
+  if (!object) return c.text('Not Found', 404)
+
+  c.header('Content-Type', row.content_type)
+  c.header('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(row.filename)}`)
+  return c.body(object.body)
 })
 
 // POST /mail/:id/read — 既読フラグ更新
