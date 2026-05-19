@@ -14,7 +14,7 @@ MAIL_DOMAIN = "hogepiyo.nemo"
 [[d1_databases]]
 binding        = "DB"
 database_name  = "mail-app-db"
-#database_id    = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+database_id    = "cd9065b5-6df6-4f6a-b9e7-e40106c9ace6"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
