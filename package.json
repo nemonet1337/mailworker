@@ -10,7 +10,7 @@
     "db:migrate:remote":    "wrangler d1 migrations apply mail-app-db --remote"
   },
   "dependencies": {
-    "hono": "^4.7.0"
+    "hono": "^4.12.21"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250514.0",
