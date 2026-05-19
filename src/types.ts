@@ -4,6 +4,8 @@ export type AppEnv = {
     BUCKET: R2Bucket
     JWT_SECRET: string
     MAIL_DOMAIN: string
+    SEND_EMAIL: SendEmail
+    RATE_LIMITER: RateLimit
   }
   Variables: {
     user?: SessionUser

@@ -3,7 +3,7 @@ import { SessionUser } from '../types'
 
 type LayoutProps = {
   title: string
-  active?: 'inbox' | 'users' | 'addresses' | 'settings'
+  active?: 'inbox' | 'compose' | 'users' | 'addresses' | 'settings'
   user?: SessionUser
   children: unknown
 }
@@ -26,6 +26,7 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
             <nav class="flex items-center gap-5 text-sm">
               <a href="/" class="font-bold text-base">Mail</a>
               <a href="/" class={active === 'inbox' ? activeClass : ''}>受信箱</a>
+              <a href="/compose" class={active === 'compose' ? activeClass : ''}>作成</a>
               <a href="/settings" class={active === 'settings' ? activeClass : ''}>設定</a>
               {user.is_admin === 1 && (
                 <div class="flex items-center gap-3">
