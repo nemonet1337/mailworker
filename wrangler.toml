@@ -1,20 +1,29 @@
-name        = "mail-app"
-main        = "src/index.tsx"
+# wrangler.toml
+name = 'mailworker'
+main = "src/index.tsx"
 compatibility_date = "2026-05-18"
 
-# JWT_SECRET は wrangler secret で管理 (平文でコミットしない)
-#[[d1_databases]]
-#binding       = "DB"
-#database_name = "mail-app-db"
-#database_id   = "YOUR_D1_DATABASE_ID"
-#migrations_dir = "migrations"
+# カスタムドメイン
+#routes = [
+#  { pattern = "webmail.hogepiyo.nemo/*", custom_domain = true }
+#]
 
-#[[r2_buckets]]
-#binding     = "BUCKET"
-#bucket_name = "YOUR_R2_BUCKET_NAME"
+[vars]
+MAIL_DOMAIN = "hogepiyo.nemo"
 
-#[vars]
-#MAIL_DOMAIN = "yourdomain.com"
+[[d1_databases]]
+binding        = "DB"
+database_name  = "mail-app-db"
+#database_id    = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+migrations_dir = "migrations"
 
-# JWT_SECRET は wrangler secret で管理 (平文でコミットしない)
-# wrangler secret put JWT_SECRET
+[[r2_buckets]]
+binding     = "BUCKET"
+bucket_name = "mailworker-bucket"
+
+[observability.logs]
+enabled = false
+invocation_logs = true
+
+[observability.traces]
+enabled = false
