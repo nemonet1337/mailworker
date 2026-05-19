@@ -9,7 +9,7 @@ compatibility_date = "2026-05-18"
 #]
 
 [vars]
-MAIL_DOMAIN = "hogepiyo.nemo"
+#MAIL_DOMAIN = "hogepiyo.nemo"
 
 [[d1_databases]]
 binding        = "DB"
