@@ -1,31 +1,37 @@
-name        = "mail-app"
-main        = "src/index.tsx"
+# wrangler.toml
+name = 'mailworker'
+main = "src/index.tsx"
 compatibility_date = "2026-05-18"
+
+# カスタムドメイン
+#routes = [
+#  { pattern = "webmail.hogepiyo.nemo/*", custom_domain = true }
+#]
+
+[vars]
+MAIL_DOMAIN = "nemonet.work"
 
 [[d1_databases]]
 binding        = "DB"
 database_name  = "mail-app-db"
-database_id    = "YOUR_D1_DATABASE_ID"
+database_id    = "cd9065b5-6df6-4f6a-b9e7-e40106c9ace6"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding     = "BUCKET"
-bucket_name = "YOUR_R2_BUCKET_NAME"
+bucket_name = "mailworker-bucket"
 
-[vars]
-MAIL_DOMAIN = "yourdomain.com"
+[observability]
+enabled = true
+head_sampling_rate = 1
 
-# JWT_SECRET は wrangler secret で管理 (平文でコミットしない)
-# wrangler secret put JWT_SECRET
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
 
-# メール受信ルーティング
-# Cloudflare Email Routing ダッシュボードで
-# "Catch-all" または特定アドレス → このWorker を設定すること
-[[send_email]]
-name = "SEND_EMAIL"
-
-[[unsafe.bindings]]
-type         = "ratelimit"
-name         = "RATE_LIMITER"
-namespace_id = "1001"
-simple       = { limit = 5, period = 60 }
+[observability.traces]
+enabled = true
+persist = true
+head_sampling_rate = 1
