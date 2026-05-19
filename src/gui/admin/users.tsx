@@ -13,7 +13,7 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({ 
         hx-post="/admin/users"
         hx-target="#user-form-result"
         hx-swap="innerHTML"
-        hx-on::after-request="if(event.detail.successful) this.reset()"
+        {...({'hx-on::after-request': "if(event.detail.successful) this.reset()"} as object)}
         class="grid md:grid-cols-4 gap-3"
       >
         <input name="display_name" type="text" required placeholder="表示名" class="border rounded px-3 py-2" />
