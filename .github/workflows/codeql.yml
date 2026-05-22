@@ -18,18 +18,15 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: github/codeql-action/init@v4
+      - uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript
           queries: security-extended
-          # メールサービス固有の追加チェック:
-          # - security-extended には XSS・injection・path traversal が含まれる
-          # - JWT/cookie の不適切な処理も検出対象
 
-      - uses: github/codeql-action/autobuild@v4
+      - uses: github/codeql-action/autobuild@v3
 
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@v3
         with:
           category: /language:javascript-typescript

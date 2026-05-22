@@ -121,8 +121,8 @@ app.post('/login', async (c) => {
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24
   const token = await createJwt({ sub: user.id, is_admin: user.is_admin, exp }, c.env.JWT_SECRET)
   setCookie(c, 'session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Strict', maxAge: 60 * 60 * 24 })
-  c.header('HX-Redirect', '/')
-  return c.body('')
+  // sessionStorage にフラッシュを書いてからリダイレクト (トースト表示用)
+  return c.html(`<script>sessionStorage.setItem('__flash',JSON.stringify({msg:'ログインしました',type:'success'}));location.replace('/')</script>`)
 })
 
 app.post('/logout', (c) => {
@@ -148,7 +148,8 @@ app.post('/settings/password', async (c) => {
   }
   const newHash = await hashPassword(newPw)
   await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, user.id).run()
-  return c.html('<p class="text-green-600 text-sm mt-2">パスワードを変更しました</p>')
+  c.header('HX-Trigger', JSON.stringify({ showToast: { message: 'パスワードを変更しました', type: 'success' } }))
+  return c.html('')
 })
 
 // GET /compose — 作成画面
@@ -188,24 +189,34 @@ app.post('/compose', async (c) => {
     return c.html('<p class="text-red-500 text-sm">送信元アドレスが不正です</p>', 403)
   }
 
-  const res = await fetch('https://api.mailchannels.net/tx/v1/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      personalizations: [{ to: [{ email: to }] }],
-      from: { email: from_ },
-      subject,
-      content: [{ type: 'text/plain', value: text }],
-    }),
-  })
+  try {
+    // 非 ASCII 件名を RFC 2047 base64 エンコード
+    const encodedSubject = encodeMailHeader(subject)
+    const rawEmail = [
+      'MIME-Version: 1.0',
+      `From: ${from_}`,
+      `To: ${to}`,
+      `Subject: ${encodedSubject}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      text,
+    ].join('\r\n')
 
-  if (!res.ok && res.status !== 202) {
-    const detail = await res.text().catch(() => '')
-    console.error('MailChannels error', res.status, detail)
+    const { readable, writable } = new TransformStream<Uint8Array>()
+    const writer = writable.getWriter()
+    writer.write(new TextEncoder().encode(rawEmail))
+    writer.close()
+
+    const message = new EmailMessage(from_, to, readable)
+    await c.env.SEND_EMAIL.send(message)
+  } catch (e) {
+    console.error('Email send error:', e)
     return c.html('<p class="text-red-500 text-sm">送信に失敗しました。しばらくしてから再試行してください</p>', 502)
   }
 
-  return c.html('<p class="text-green-600 text-sm">送信しました</p>')
+  c.header('HX-Trigger', JSON.stringify({ showToast: { message: '送信しました', type: 'success' } }))
+  return c.html('')
 })
 
 // GET /mail/:id — メール本文取得 (htmx パーシャル)
@@ -314,7 +325,8 @@ app.post('/admin/users', async (c) => {
   } catch {
     return c.html('<p class="text-red-500 text-sm mt-2">ユーザーの作成に失敗しました</p>', 400)
   }
-  return c.html('<p class="text-green-600 text-sm mt-2">ユーザーを追加しました</p>')
+  c.header('HX-Trigger', JSON.stringify({ showToast: { message: 'ユーザーを追加しました', type: 'success' } }))
+  return c.html('')
 })
 
 app.post('/admin/users/:id/delete', async (c) => {
@@ -348,7 +360,8 @@ app.post('/admin/addresses', async (c) => {
   } catch {
     return c.html('<p class="text-red-500 text-sm mt-2">アドレス作成に失敗しました</p>', 400)
   }
-  return c.html('<p class="text-green-600 text-sm mt-2">アドレスを追加しました</p>')
+  c.header('HX-Trigger', JSON.stringify({ showToast: { message: 'アドレスを追加しました', type: 'success' } }))
+  return c.html('')
 })
 
 app.post('/admin/addresses/:id/delete', async (c) => {
@@ -367,6 +380,15 @@ app.post('/admin/addresses/:id/delete', async (c) => {
   await c.env.DB.prepare('DELETE FROM mail_addresses WHERE id = ?').bind(addressId).run()
   return c.html('')
 })
+
+// 非 ASCII 文字を含むメールヘッダーを RFC 2047 base64 エンコード
+function encodeMailHeader(value: string): string {
+  if (!/[^\x00-\x7F]/.test(value)) return value
+  const bytes = new TextEncoder().encode(value)
+  let bin = ''
+  for (const b of bytes) bin += String.fromCharCode(b)
+  return `=?UTF-8?B?${btoa(bin)}?=`
+}
 
 export default {
   fetch: app.fetch.bind(app),
