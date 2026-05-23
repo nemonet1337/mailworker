@@ -1,36 +1,184 @@
 import { FC } from 'hono/jsx'
 import { Layout } from '../layout'
+import { Icon } from '../icons'
 import { SessionUser } from '../../types'
 
 type Addr = { id: string; address: string; display_name: string; created_at: string }
 
-export const AddressesPage: FC<{ currentUser: SessionUser; users: SessionUser[]; addresses: Addr[]; domain: string }> = ({ currentUser, users, addresses, domain }) => (
+export const AddressesPage: FC<{
+  currentUser: SessionUser
+  users: SessionUser[]
+  addresses: Addr[]
+  domain: string
+}> = ({ currentUser, users, addresses, domain }) => (
   <Layout title="メールアドレス管理" user={currentUser} active="addresses">
-    <h1 class="text-2xl font-bold mb-4">メールアドレス管理</h1>
-    <section class="bg-white border rounded p-4 mb-6">
-      <form hx-post="/admin/addresses" hx-target="#addr-form-result" hx-swap="innerHTML" {...({'hx-on::after-request': "if(event.detail.successful) this.reset()"} as object)} class="grid md:grid-cols-3 gap-3">
-        <div class="flex items-center gap-1">
-          <input type="text" name="local" placeholder="username" required class="border rounded px-3 py-2" />
-          <span class="text-gray-500">@{domain}</span>
+    <div class="page">
+      <div class="page-inner">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">アドレス管理</h1>
+            <div class="page-subtitle">全 {addresses.length}件</div>
+          </div>
+          <div class="page-actions">
+            <button
+              class="btn-primary"
+              onclick="document.getElementById('add-addr-dialog').style.display='flex'"
+            >
+              <Icon name="plus" size={14} />
+              アドレス追加
+            </button>
+          </div>
         </div>
-        <select name="user_id" required class="border rounded px-3 py-2">
-          {users.map((u) => <option value={u.id}>{u.display_name}</option>)}
-        </select>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-fit">追加</button>
-      </form>
-      <div id="addr-form-result" class="mt-2"></div>
-    </section>
 
-    <table class="w-full bg-white border rounded overflow-hidden text-sm">
-      <thead class="bg-gray-50"><tr><th>メールアドレス</th><th>割り当てユーザー</th><th>作成日</th><th>操作</th></tr></thead>
-      <tbody>
-        {addresses.map((a) => (
-          <tr class="border-t" key={a.id}>
-            <td class="p-2">{a.address}</td><td class="p-2">{a.display_name}</td><td class="p-2">{a.created_at}</td>
-            <td class="p-2"><button hx-post={`/admin/addresses/${a.id}/delete`} hx-target="closest tr" hx-swap="outerHTML swap:0.3s" hx-confirm="このアドレスを削除しますか？" class="text-red-600">削除</button></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <span class="pill active">@{domain}</span>
+        </div>
+
+        <div id="addr-list">
+          {addresses.map((a) => {
+            const [local, addrDomain] = a.address.split('@')
+            return (
+              <div key={a.id} id={`addr-wrap-${a.id}`} class="addr-toggle-wrapper">
+                {/* Collapsed state (visible by default) */}
+                <div
+                  class="address-card addr-collapsed"
+                  onclick={`toggleAddr('${a.id}')`}
+                >
+                  <div class="address-icon">
+                    <Icon name="at" size={18} />
+                  </div>
+                  <div class="address-info">
+                    <div class="address-addr">
+                      {local}<span class="domain">@{addrDomain}</span>
+                    </div>
+                    <div class="address-desc">{a.display_name} · {a.created_at.slice(0, 10)}</div>
+                  </div>
+                  <div class="address-state">
+                    <Icon name="chevronRight" size={14} stroke="var(--mid)" />
+                  </div>
+                </div>
+
+                {/* Expanded state (hidden by default) */}
+                <div class="address-card expanded addr-expanded" style="display:none">
+                  <div
+                    class="address-icon-row"
+                    onclick={`toggleAddr('${a.id}')`}
+                    style="cursor:pointer"
+                  >
+                    <div class="address-icon" style="background:var(--coral);color:var(--white);border-color:var(--ink)">
+                      <Icon name="at" size={18} />
+                    </div>
+                    <div class="address-info">
+                      <div class="address-addr">
+                        {local}<span class="domain">@{addrDomain}</span>
+                      </div>
+                      <div class="address-desc">{a.display_name}</div>
+                    </div>
+                    <div class="address-state">
+                      <Icon name="chevronDown" size={14} stroke="var(--mid)" />
+                    </div>
+                  </div>
+                  <div class="address-detail">
+                    <div>
+                      <div class="detail-label">オーナー</div>
+                      <div style="font-size:13px;font-weight:500">{a.display_name}</div>
+                    </div>
+                    <div>
+                      <div class="detail-label">作成日</div>
+                      <div style="font-size:13px">{a.created_at.slice(0, 10)}</div>
+                    </div>
+                    <div style="grid-column:span 2;display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--line-soft)">
+                      <button
+                        class="btn-ghost"
+                        style="color:var(--red);border-color:var(--red)"
+                        hx-post={`/admin/addresses/${a.id}/delete`}
+                        hx-target={`#addr-wrap-${a.id}`}
+                        hx-swap="outerHTML swap:0.3s"
+                        hx-confirm={`${a.address} を削除しますか？`}
+                      >
+                        <Icon name="trash" size={14} />
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="overlay"
+      id="add-addr-dialog"
+      style="display:none"
+      onclick="if(event.target===this)this.style.display='none'"
+    >
+      <div class="dialog">
+        <h3>アドレスを追加</h3>
+        <p>新しいメールアドレスをユーザーに割り当てます。</p>
+        <form
+          hx-post="/admin/addresses"
+          hx-target="#add-addr-result"
+          hx-swap="innerHTML"
+          {...({
+            'hx-on::after-request': "if(event.detail.successful){document.getElementById('add-addr-dialog').style.display='none';location.reload()}",
+          } as object)}
+        >
+          <div class="form-field">
+            <label class="form-label">ローカルパート</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input
+                class="form-input"
+                name="local"
+                type="text"
+                required
+                placeholder="username"
+                style="flex:1"
+              />
+              <span style="font-size:14px;color:var(--sub);white-space:nowrap;font-family:var(--font-mono)">@{domain}</span>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">オーナー</label>
+            <select class="form-input form-select" name="user_id" required>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.display_name}</option>
+              ))}
+            </select>
+          </div>
+          <div id="add-addr-result" style="margin-bottom:12px;font-size:12px" />
+          <div class="dialog-actions">
+            <button
+              type="button"
+              class="btn-ghost"
+              onclick="document.getElementById('add-addr-dialog').style.display='none'"
+            >
+              キャンセル
+            </button>
+            <button type="submit" class="btn-primary">追加</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script dangerouslySetInnerHTML={{ __html: `
+      function toggleAddr(id) {
+        var wrapper = document.getElementById('addr-wrap-' + id);
+        if (!wrapper) return;
+        var collapsed = wrapper.querySelector('.addr-collapsed');
+        var expanded = wrapper.querySelector('.addr-expanded');
+        var isOpen = expanded.style.display !== 'none';
+        document.querySelectorAll('.addr-toggle-wrapper').forEach(function(w) {
+          w.querySelector('.addr-collapsed').style.display = '';
+          w.querySelector('.addr-expanded').style.display = 'none';
+        });
+        if (!isOpen) {
+          collapsed.style.display = 'none';
+          expanded.style.display = '';
+        }
+      }
+    `}} />
   </Layout>
 )
