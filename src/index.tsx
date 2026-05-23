@@ -180,7 +180,7 @@ app.get('/compose', async (c) => {
   const from_addresses = (rows.results as { address: string }[]).map((r) => r.address)
   if (from_addresses.length === 0) {
     return c.html(
-      <Layout title="メール作成" user={user} active="compose">
+      <Layout title="メール作成" user={user}>
         <p class="text-red-500">送信元アドレスが設定されていません。管理者にご連絡ください。</p>
       </Layout>
     )
