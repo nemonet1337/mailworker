@@ -1,12 +1,14 @@
 import { Hono } from 'hono'
 import { deleteCookie, setCookie } from 'hono/cookie'
 import { Layout } from './gui/layout'
-import { LoginPage } from './gui/login'
+import { SidebarAddressItems } from './gui/layout'
+import { LoginPage, LoginError } from './gui/login'
 import { UsersPage } from './gui/admin/users'
 import { AddressesPage } from './gui/admin/addresses'
-import { InboxPage, InboxRows, MailDetailPartial } from './gui/inbox'
+import { DashboardPage } from './gui/admin/dashboard'
+import { InboxPage, MailDetailPartial } from './gui/inbox'
 import { SettingsPage } from './gui/settings'
-import { ComposePage } from './gui/compose'
+import { ComposePage, ComposeDrawerPartial } from './gui/compose'
 import { adminMiddleware } from './middleware/admin'
 import { authMiddleware } from './middleware/auth'
 import { AppEnv, EmailRow } from './types'
@@ -68,35 +70,26 @@ app.get('/', async (c) => {
   )
 })
 
-// GET /inbox/rows — 受信箱テーブル行のパーシャル (ポーリング用)
-app.get('/inbox/rows', async (c) => {
+// GET /sidebar/unread — 未読数バッジ (HTMX ポーリング用)
+app.get('/sidebar/unread', async (c) => {
   const user = c.get('user')!
-  const selectedAddr = c.req.query('addr') ?? ''
+  const cnt = await c.env.DB.prepare(`
+    SELECT COUNT(*) as cnt FROM emails e
+    JOIN mail_addresses m ON m.address = e.to_address
+    WHERE m.user_id = ? AND e.is_read = 0
+  `).bind(user.id).first<{ cnt: number }>()
+  const n = cnt?.cnt ?? 0
+  return c.text(n > 0 ? String(n) : '')
+})
 
-  const addrRows = await c.env.DB.prepare(
+// GET /sidebar/addresses — サイドバーアドレスナビ (HTMX lazy load)
+app.get('/sidebar/addresses', async (c) => {
+  const user = c.get('user')!
+  const rows = await c.env.DB.prepare(
     'SELECT address FROM mail_addresses WHERE user_id = ? ORDER BY address'
   ).bind(user.id).all()
-  const addresses = (addrRows.results as { address: string }[]).map((r) => r.address)
-  const validAddr = addresses.includes(selectedAddr) ? selectedAddr : ''
-
-  let query: string
-  let params: unknown[]
-  if (validAddr) {
-    query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read
-      FROM emails e WHERE e.to_address = ?
-      ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE}`
-    params = [validAddr]
-  } else {
-    query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read
-      FROM emails e
-      JOIN mail_addresses m ON m.address = e.to_address
-      WHERE m.user_id = ?
-      ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE}`
-    params = [user.id]
-  }
-
-  const emails = await c.env.DB.prepare(query).bind(...params).all()
-  return c.html(<InboxRows emails={emails.results as EmailRow[]} addr={validAddr || undefined} />)
+  const addrs = (rows.results as { address: string }[]).map((r) => r.address)
+  return c.html(<SidebarAddressItems addresses={addrs} />)
 })
 
 app.get('/login', (c) => c.html(<LoginPage />))
@@ -105,17 +98,22 @@ app.post('/login', async (c) => {
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const allowed = await checkRateLimit(c.env.RATE_LIMITER, `login:${ip}`)
   if (!allowed) {
-    return c.html('<p class="text-red-500 text-sm mt-2">試行回数が多すぎます。しばらくしてから再試行してください</p>', 429)
+    return c.html(
+      <LoginError title="試行回数超過" desc="しばらくしてから再試行してください" />,
+      429,
+    )
   }
 
   const body = await c.req.parseBody()
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
-  if (!email || !password) return c.html('<p class="text-red-500 text-sm mt-2">メールアドレスまたはパスワードが違います</p>', 400)
+  if (!email || !password) {
+    return c.html(<LoginError title="入力エラー" desc="メールアドレスとパスワードを入力してください" />, 400)
+  }
 
   const user = await c.env.DB.prepare('SELECT id, password_hash, is_admin FROM users WHERE email = ?').bind(email).first<{id:string;password_hash:string;is_admin:0|1}>()
   if (!user || !(await verifyPassword(password, user.password_hash))) {
-    return c.html('<p class="text-red-500 text-sm mt-2">メールアドレスまたはパスワードが違います</p>', 401)
+    return c.html(<LoginError title="ログイン失敗" desc="メールアドレスまたはパスワードが違います" />, 401)
   }
 
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24
@@ -150,6 +148,27 @@ app.post('/settings/password', async (c) => {
   await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, user.id).run()
   c.header('HX-Trigger', JSON.stringify({ showToast: { message: 'パスワードを変更しました', type: 'success' } }))
   return c.html('')
+})
+
+// GET /compose/drawer — ドロワー Partial (HTMX)
+app.get('/compose/drawer', async (c) => {
+  const user = c.get('user')!
+  const rows = await c.env.DB.prepare(
+    'SELECT address FROM mail_addresses WHERE user_id = ? ORDER BY address'
+  ).bind(user.id).all()
+  const from_addresses = (rows.results as { address: string }[]).map((r) => r.address)
+  if (from_addresses.length === 0) return c.html('')
+
+  const replyToId = c.req.query('replyTo')
+  let replyTo: { subject: string; from_: string } | undefined
+  if (replyToId) {
+    const mail = await c.env.DB.prepare(
+      'SELECT subject, from_ FROM emails WHERE id = ?'
+    ).bind(replyToId).first<{ subject: string; from_: string }>()
+    if (mail) replyTo = mail
+  }
+
+  return c.html(<ComposeDrawerPartial from_addresses={from_addresses} replyTo={replyTo} />)
 })
 
 // GET /compose — 作成画面
@@ -301,6 +320,41 @@ app.post('/mail/:id/delete', async (c) => {
 
   await c.env.DB.prepare('DELETE FROM emails WHERE id = ?').bind(emailId).run()
   return c.html('')
+})
+
+app.get('/admin/dashboard', async (c) => {
+  const currentUser = c.get('user')!
+
+  const [received, unread, userCnt, addrCnt, daily, addrStats, recent] = await Promise.all([
+    c.env.DB.prepare(
+      "SELECT COUNT(*) as cnt FROM emails WHERE received_at > datetime('now', '-30 days')"
+    ).first<{ cnt: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as cnt FROM emails WHERE is_read = 0').first<{ cnt: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as cnt FROM users').first<{ cnt: number }>(),
+    c.env.DB.prepare('SELECT COUNT(*) as cnt FROM mail_addresses').first<{ cnt: number }>(),
+    c.env.DB.prepare(
+      "SELECT date(received_at) as day, COUNT(*) as cnt FROM emails WHERE received_at > datetime('now', '-14 days') GROUP BY day ORDER BY day"
+    ).all(),
+    c.env.DB.prepare(
+      "SELECT to_address, COUNT(*) as cnt FROM emails WHERE received_at > datetime('now', '-30 days') GROUP BY to_address ORDER BY cnt DESC LIMIT 10"
+    ).all(),
+    c.env.DB.prepare(
+      'SELECT id, from_, subject, received_at, is_read FROM emails ORDER BY received_at DESC LIMIT 6'
+    ).all(),
+  ])
+
+  return c.html(
+    <DashboardPage
+      currentUser={currentUser}
+      receivedCount={received?.cnt ?? 0}
+      unreadCount={unread?.cnt ?? 0}
+      userCount={userCnt?.cnt ?? 0}
+      addressCount={addrCnt?.cnt ?? 0}
+      dailyData={daily.results as never[]}
+      addrStats={addrStats.results as never[]}
+      recentEmails={recent.results as never[]}
+    />
+  )
 })
 
 app.get('/admin/users', async (c) => {

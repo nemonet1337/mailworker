@@ -1,43 +1,44 @@
 import { FC } from 'hono/jsx'
 import { SessionUser } from '../types'
+import { CSS } from './styles'
+import { Icon, LogoMark } from './icons'
+
+type ActivePage = 'inbox' | 'users' | 'addresses' | 'dashboard' | 'settings'
 
 type LayoutProps = {
   title: string
-  active?: 'inbox' | 'compose' | 'users' | 'addresses' | 'settings'
+  active?: ActivePage
   user?: SessionUser
   children: unknown
 }
 
-const activeClass = 'text-blue-600 font-semibold'
-
 const toastScript = `
 (function () {
-  function showToast(message, type) {
+  function showToast(message, type, desc) {
     type = type || 'success';
     var container = document.getElementById('toast-container');
     if (!container) return;
     var toast = document.createElement('div');
-    var bg = type === 'success' ? 'bg-green-600'
-           : type === 'error'   ? 'bg-red-600'
-           : 'bg-blue-600';
-    toast.className = bg + ' text-white px-4 py-3 rounded-lg shadow-lg text-sm max-w-xs pointer-events-auto transition-all duration-300 opacity-0 translate-y-2';
-    toast.textContent = message;
+    toast.className = 'toast ' + type;
+    var iconHtml = type === 'success' ? '✓' : type === 'error' ? '!' : '↻';
+    toast.innerHTML =
+      '<div class="toast-icon">' + iconHtml + '</div>' +
+      '<div class="toast-content">' +
+        '<div class="toast-title">' + message + '</div>' +
+        (desc ? '<div class="toast-desc">' + desc + '</div>' : '') +
+      '</div>' +
+      '<button class="toast-close" onclick="this.closest(\\'.toast\\').remove()">\xd7</button>';
     container.appendChild(toast);
-    requestAnimationFrame(function () {
-      toast.classList.remove('opacity-0', 'translate-y-2');
-    });
     setTimeout(function () {
-      toast.classList.add('opacity-0');
-      setTimeout(function () { toast.remove(); }, 300);
-    }, 3500);
+      toast.classList.add('exit');
+      setTimeout(function () { toast.remove(); }, 200);
+    }, 4000);
   }
 
-  // HTMX の HX-Trigger: {"showToast": {...}} を受け取る
   document.body.addEventListener('showToast', function (evt) {
-    showToast(evt.detail.message, evt.detail.type);
+    showToast(evt.detail.message, evt.detail.type, evt.detail.desc);
   });
 
-  // ログイン成功など、リダイレクト前に sessionStorage に保存したフラッシュを表示
   document.addEventListener('DOMContentLoaded', function () {
     try {
       var raw = sessionStorage.getItem('__flash');
@@ -53,49 +54,169 @@ const toastScript = `
 })();
 `
 
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((w) => w[0] ?? '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || '?'
+}
+
+const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active }) => (
+  <aside class="sidebar">
+    <div class="brand">
+      <LogoMark size={28} />
+      <div class="brand-text">
+        WorkerMail
+        <small>nemonet.work</small>
+      </div>
+    </div>
+
+    <button
+      class="compose-btn"
+      hx-get="/compose/drawer"
+      hx-target="#compose-slot"
+      hx-swap="innerHTML"
+    >
+      <Icon name="plus" size={16} strokeWidth={2.2} /> 作成 / Compose
+    </button>
+
+    <div class="nav-section-label">メール</div>
+
+    <a href="/" class={`nav-item${active === 'inbox' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="inbox" size={16} />
+      </span>
+      <span class="nav-item-label">受信箱</span>
+      <span
+        class="nav-item-count"
+        hx-get="/sidebar/unread"
+        hx-trigger="load, every 30s"
+        hx-target="this"
+        hx-swap="innerHTML"
+      />
+    </a>
+
+    <div
+      class="nav-section-label"
+      style="cursor:default"
+      hx-get="/sidebar/addresses"
+      hx-trigger="load"
+      hx-target="next .sidebar-addr-list"
+      hx-swap="innerHTML"
+    >
+      アドレス
+    </div>
+    <div class="sidebar-addr-list" />
+
+    {user.is_admin === 1 && (
+      <>
+        <div class="nav-section-label admin">
+          <Icon name="crown" size={11} strokeWidth={2.2} />
+          <span>管理 · admin only</span>
+        </div>
+        <a href="/admin/dashboard" class={`nav-item${active === 'dashboard' ? ' active' : ''}`}>
+          <span class="nav-item-icon">
+            <Icon name="shield" size={16} />
+          </span>
+          <span class="nav-item-label">ダッシュボード</span>
+        </a>
+        <a href="/admin/users" class={`nav-item${active === 'users' ? ' active' : ''}`}>
+          <span class="nav-item-icon">
+            <Icon name="users" size={16} />
+          </span>
+          <span class="nav-item-label">ユーザー</span>
+        </a>
+        <a href="/admin/addresses" class={`nav-item${active === 'addresses' ? ' active' : ''}`}>
+          <span class="nav-item-icon">
+            <Icon name="at" size={16} />
+          </span>
+          <span class="nav-item-label">アドレス</span>
+        </a>
+      </>
+    )}
+
+    <div class="sidebar-footer">
+      <div class="avatar">{initials(user.display_name)}</div>
+      <div class="user-info">
+        <div class="user-name" style="display:flex;align-items:center;gap:4px">
+          {user.display_name}
+          {user.is_admin === 1 && (
+            <Icon name="crown" size={11} stroke="var(--coral)" strokeWidth={2.2} />
+          )}
+        </div>
+        <div class="user-email">{user.email}</div>
+      </div>
+      <form hx-post="/logout" hx-swap="none">
+        <button class="icon-btn" type="submit" title="ログアウト">
+          <Icon name="x" size={16} />
+        </button>
+      </form>
+    </div>
+  </aside>
+)
+
+export const SidebarAddressItems: FC<{ addresses: string[] }> = ({ addresses }) => (
+  <>
+    {addresses.map((addr) => (
+      <a key={addr} href={`/?addr=${encodeURIComponent(addr)}`} class="nav-item">
+        <span class="address-dot" />
+        <span class="nav-item-label" style="font-family:var(--font-mono)">
+          {addr}
+        </span>
+      </a>
+    ))}
+  </>
+)
+
 export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
   <html lang="ja">
     <head>
       <meta charSet="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>{title}</title>
-      <script src="https://cdn.tailwindcss.com"></script>
-      <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    </head>
-    <body class="bg-gray-100 min-h-screen text-gray-900">
-      {/* トースト通知コンテナ */}
-      <div
-        id="toast-container"
-        class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
-        aria-live="polite"
+      <title>{title} — WorkerMail</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
       />
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <script src="https://unpkg.com/htmx.org@1.9.12" />
+    </head>
+    <body>
+      <div class="app">
+        {user ? <Sidebar user={user} active={active} /> : null}
+        <div class="main">{children as any}</div>
+      </div>
 
-      {user && (
-        <header class="bg-white border-b">
-          <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-            <nav class="flex items-center gap-5 text-sm">
-              <a href="/" class="font-bold text-base">Mail</a>
-              <a href="/" class={active === 'inbox' ? activeClass : ''}>受信箱</a>
-              <a href="/compose" class={active === 'compose' ? activeClass : ''}>作成</a>
-              <a href="/settings" class={active === 'settings' ? activeClass : ''}>設定</a>
-              {user.is_admin === 1 && (
-                <div class="flex items-center gap-3">
-                  <span>管理</span>
-                  <a href="/admin/users" class={active === 'users' ? activeClass : ''}>ユーザー管理</a>
-                  <a href="/admin/addresses" class={active === 'addresses' ? activeClass : ''}>メールアドレス管理</a>
-                </div>
-              )}
-            </nav>
-            <form hx-post="/logout" hx-swap="none">
-              <button class="text-sm px-3 py-2 bg-gray-200 rounded">ログアウト</button>
-            </form>
-          </div>
-        </header>
-      )}
-      <main class="max-w-5xl mx-auto p-4">{children}</main>
+      <div id="compose-slot" />
+      <div class="toast-container" id="toast-container" aria-live="polite" />
 
-      {/* トースト JS (インライン) */}
       <script dangerouslySetInnerHTML={{ __html: toastScript }} />
+    </body>
+  </html>
+)
+
+export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, children }) => (
+  <html lang="ja">
+    <head>
+      <meta charSet="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>{title} — WorkerMail</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <script src="https://unpkg.com/htmx.org@1.9.12" />
+    </head>
+    <body style="overflow:auto">
+      {children as any}
+      <div class="toast-container" id="toast-container" aria-live="polite" />
     </body>
   </html>
 )

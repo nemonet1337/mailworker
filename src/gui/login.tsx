@@ -1,18 +1,72 @@
 import { FC } from 'hono/jsx'
-import { Layout } from './layout'
+import { LoginLayout } from './layout'
+import { LogoMark } from './icons'
 
 export const LoginPage: FC = () => (
-  <Layout title="Login">
-    <div class="min-h-[80vh] flex items-center justify-center">
-      <div class="bg-white shadow border rounded-lg p-6 w-full max-w-sm">
-        <h1 class="text-2xl font-bold mb-5">Mail</h1>
-        <form hx-post="/login" hx-target="#login-error" hx-swap="innerHTML" class="space-y-3">
-          <input name="email" type="email" autocomplete="email" required class="w-full border rounded px-3 py-2" placeholder="email@example.com" />
-          <input name="password" type="password" autocomplete="current-password" required class="w-full border rounded px-3 py-2" placeholder="Password" />
-          <button type="submit" class="w-full bg-blue-600 text-white rounded py-2">ログイン</button>
-        </form>
-        <div id="login-error" class="mt-2"></div>
-      </div>
+  <LoginLayout title="ログイン">
+    <div class="login-screen">
+      <form
+        class="login-card"
+        hx-post="/login"
+        hx-target="#login-error"
+        hx-swap="innerHTML"
+      >
+        <div class="login-mark">
+          <LogoMark size={40} />
+          <div class="brand-text">
+            WorkerMail
+            <small>self-hosted on cloudflare</small>
+          </div>
+        </div>
+
+        <div class="login-greeting">
+          <h1>Mail.</h1>
+          <p>ログインしてください · Sign in</p>
+        </div>
+
+        <div id="login-error" />
+
+        <div class="login-field">
+          <label>メール / Email</label>
+          <input
+            class="underline-input"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            placeholder="you@example.com"
+            autofocus
+          />
+        </div>
+
+        <div class="login-field">
+          <label>パスワード / Password</label>
+          <input
+            class="underline-input"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            placeholder="••••••••"
+          />
+        </div>
+
+        <button class="login-cta" type="submit">
+          Sign in →
+        </button>
+      </form>
+
+      <div class="login-footer">workermail.nemonet.work · v0.1</div>
     </div>
-  </Layout>
+  </LoginLayout>
+)
+
+export const LoginError: FC<{ title: string; desc?: string }> = ({ title, desc }) => (
+  <div class="login-error">
+    <span class="login-error-icon">!</span>
+    <div class="login-error-body">
+      <b>{title}</b>
+      {desc && <div>{desc}</div>}
+    </div>
+  </div>
 )
