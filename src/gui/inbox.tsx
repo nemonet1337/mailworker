@@ -258,7 +258,7 @@ export const MailDetailPartial: FC<{
             <iframe
               id="body-html"
               srcdoc={body_html}
-              sandbox="allow-same-origin"
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
               style="width:100%;min-height:400px;border:none;display:block"
               onload="this.style.height=this.contentDocument.body.scrollHeight+32+'px'"
             />
