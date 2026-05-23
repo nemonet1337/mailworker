@@ -11,7 +11,7 @@ type AttachmentItem = {
 }
 
 function senderInitials(addr: string): string {
-  const name = addr.replace(/<.*>/, '').trim() || addr
+  const name = addr.replace(/[<>]/g, '').trim() || addr
   return name
     .split(/\s+/)
     .map((w) => w[0] ?? '')
