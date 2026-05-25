@@ -3,6 +3,7 @@ import { deleteCookie, setCookie } from 'hono/cookie'
 import { Layout } from './gui/layout'
 import { SidebarAddressItems } from './gui/layout'
 import { LoginPage, LoginError } from './gui/login'
+import { SetupPage, SetupError } from './gui/setup'
 import { UsersPage } from './gui/admin/users'
 import { AddressesPage } from './gui/admin/addresses'
 import { DashboardPage } from './gui/admin/dashboard'
@@ -90,6 +91,44 @@ app.get('/sidebar/addresses', async (c) => {
   ).bind(user.id).all()
   const addrs = (rows.results as { address: string }[]).map((r) => r.address)
   return c.html(<SidebarAddressItems addresses={addrs} />)
+})
+
+app.get('/setup', (c) => c.html(<SetupPage />))
+
+app.post('/setup', async (c) => {
+  // セットアップはユーザーが存在しない場合のみ許可
+  const userCount = await c.env.DB.prepare('SELECT COUNT(*) as cnt FROM users').first<{ cnt: number }>()
+  if ((userCount?.cnt ?? 0) > 0) {
+    return c.redirect('/login')
+  }
+
+  const body = await c.req.parseBody()
+  const displayName = String(body.display_name || '').trim()
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = String(body.password || '')
+
+  if (!displayName || !email || password.length < 8) {
+    return c.html(
+      <SetupError title="入力エラー" desc="全ての項目を入力し、パスワードは8文字以上にしてください" />,
+      400,
+    )
+  }
+
+  const id = crypto.randomUUID()
+  const passwordHash = await hashPassword(password)
+  const createdAt = new Date().toISOString().slice(0, 10)
+  try {
+    await c.env.DB.prepare(
+      'INSERT INTO users (id, email, display_name, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, 1, ?)'
+    ).bind(id, email, displayName, passwordHash, createdAt).run()
+  } catch {
+    return c.html(
+      <SetupError title="作成失敗" desc="アカウントの作成に失敗しました。メールアドレスが既に使用されている可能性があります" />,
+      400,
+    )
+  }
+
+  return c.html(`<script>sessionStorage.setItem('__flash',JSON.stringify({msg:'管理者アカウントを作成しました',type:'success'}));location.replace('/login')</script>`)
 })
 
 app.get('/login', (c) => c.html(<LoginPage />))
