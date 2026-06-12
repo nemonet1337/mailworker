@@ -134,6 +134,14 @@ app.post('/setup', async (c) => {
 app.get('/login', (c) => c.html(<LoginPage />))
 
 app.post('/login', async (c) => {
+  // JWT_SECRET 未設定のままトークンを発行しない (デプロイ直後の設定漏れ対策)
+  if (!c.env.JWT_SECRET) {
+    return c.html(
+      <LoginError title="サーバー設定エラー" desc="JWT_SECRET が未設定です。wrangler secret put JWT_SECRET で設定してください" />,
+      500,
+    )
+  }
+
   const ip = c.req.header('CF-Connecting-IP') ?? 'unknown'
   const allowed = await checkRateLimit(c.env.RATE_LIMITER, `login:${ip}`)
   if (!allowed) {

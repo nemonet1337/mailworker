@@ -6,6 +6,8 @@ export type AppEnv = {
     MAIL_DOMAIN: string
     SEND_EMAIL: SendEmail
     RATE_LIMITER: RateLimit
+    // wrangler.toml の [[queues.producers]] を有効化した場合のみバインドされる
+    MAIL_QUEUE?: Queue
   }
   Variables: {
     user?: SessionUser
