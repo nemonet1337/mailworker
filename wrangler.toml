@@ -50,6 +50,8 @@ name = "SEND_EMAIL"
 name         = "RATE_LIMITER"
 type         = "ratelimit"
 namespace_id = "1001"
+simple_limit = 5
+period       = 60
 
 [observability]
 enabled = true
