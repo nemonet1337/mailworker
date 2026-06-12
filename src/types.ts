@@ -6,6 +6,7 @@ export type AppEnv = {
     MAIL_DOMAIN: string
     SEND_EMAIL: SendEmail
     RATE_LIMITER: RateLimit
+    MAIL_QUEUE: Queue
   }
   Variables: {
     user?: SessionUser

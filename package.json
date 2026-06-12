@@ -5,9 +5,37 @@
   "scripts": {
     "dev":                  "wrangler dev --local",
     "build":                "tsc --noEmit",
-    "deploy":               "wrangler deploy",
-    "db:migrate:local":     "wrangler d1 migrations apply mail-app-db --local",
-    "db:migrate:remote":    "wrangler d1 migrations apply mail-app-db --remote"
+    "deploy":               "npm run db:migrate:remote && wrangler deploy",
+    "db:migrate:local":     "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote":    "wrangler d1 migrations apply DB --remote"
+  },
+  "cloudflare": {
+    "label": "mailworker",
+    "products": ["Workers", "D1", "R2", "Queues"],
+    "categories": ["starter"],
+    "bindings": {
+      "DB": {
+        "description": "メール・ユーザーデータを保存する D1 データベース。既存のデータベースを選択するか、無い場合は新規作成してください。"
+      },
+      "BUCKET": {
+        "description": "添付ファイルを保存する R2 バケット。既存のバケットを選択するか、無い場合は新規作成してください。"
+      },
+      "MAIL_QUEUE": {
+        "description": "非同期メール処理用の Queue。Workers Paid プランが必要です。"
+      },
+      "SEND_EMAIL": {
+        "description": "メール送信用バインディング。デプロイ後、Cloudflare ダッシュボードで Email Routing を有効化してください。"
+      },
+      "RATE_LIMITER": {
+        "description": "ログインのブルートフォース対策用レートリミッター。追加設定は不要です。"
+      },
+      "MAIL_DOMAIN": {
+        "description": "受信メールアドレスのドメイン。自分が所有するドメインに変更してください。"
+      },
+      "JWT_SECRET": {
+        "description": "JWT 署名用シークレット。`openssl rand -hex 32` などで生成したランダム文字列を設定してください。"
+      }
+    }
   },
   "dependencies": {
     "hono": "^4.12.23"

@@ -12,8 +12,10 @@ compatibility_date = "2026-05-18"
 MAIL_DOMAIN = "nemonet.work"
 
 # D1 データベース
-# 初回セットアップ: wrangler d1 create mail-app-db
-# 出力された database_id をここに設定してください
+# Deploy to Cloudflare ボタン: デプロイ画面で既存 DB の選択 / 新規作成が可能
+#   (作成されたリソースの ID で database_id が自動的に書き換えられます)
+# 手動セットアップ: wrangler d1 create mail-app-db
+#   → 出力された database_id をここに設定してください
 [[d1_databases]]
 binding        = "DB"
 database_name  = "mail-app-db"
@@ -21,10 +23,19 @@ database_id    = "cd9065b5-6df6-4f6a-b9e7-e40106c9ace6"
 migrations_dir = "migrations"
 
 # R2 バケット (添付ファイル保存)
-# 初回セットアップ: wrangler r2 bucket create mailworker-bucket
+# Deploy to Cloudflare ボタン: デプロイ画面で既存バケットの選択 / 新規作成が可能
+# 手動セットアップ: wrangler r2 bucket create mailworker-bucket
 [[r2_buckets]]
 binding     = "BUCKET"
 bucket_name = "mailworker-bucket"
+
+# Queues (非同期メール処理用プロデューサー)
+# Deploy to Cloudflare ボタン: デプロイ時に自動プロビジョニングされます
+# 手動セットアップ: wrangler queues create mailworker-queue
+# 注意: Queues の利用には Workers Paid プランが必要です
+[[queues.producers]]
+binding = "MAIL_QUEUE"
+queue   = "mailworker-queue"
 
 # メール送信 (Cloudflare Email Workers)
 # Cloudflare ダッシュボードで Email Routing を有効にしてください
@@ -32,7 +43,7 @@ bucket_name = "mailworker-bucket"
 name = "SEND_EMAIL"
 
 # レートリミッター (ブルートフォース対策)
-# Cloudflare ダッシュボードで Rate Limiting ルールを作成し namespace_id を設定してください
+# namespace_id はこの Worker 内で一意な任意の正の整数 (ダッシュボードでの事前作成は不要)
 [[unsafe.bindings]]
 name         = "RATE_LIMITER"
 type         = "ratelimit"
