@@ -50,9 +50,15 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # Queue が存在しない場合に作成 (Workers Paid プランが必要)
+      # Queue が存在しない場合に作成
+      # (wrangler.toml で [[queues.producers]] を有効化している場合のみ / Workers Paid プランが必要)
       - name: Ensure Queue exists
-        run: npx wrangler queues create mailworker-queue 2>&1 || true
+        run: |
+          if grep -qE '^\s*\[\[queues\.producers\]\]' wrangler.toml; then
+            npx wrangler queues create mailworker-queue 2>&1 || true
+          else
+            echo "Queues binding is disabled; skipping"
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

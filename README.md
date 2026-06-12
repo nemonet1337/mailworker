@@ -17,15 +17,27 @@ D1 (SQLite)・R2 (オブジェクトストレージ)・Email Workers を使用�
 |------|------|
 | D1 データベース (`DB`) | 既存のデータベースを選択。無い場合は新規作成 |
 | R2 バケット (`BUCKET`) | 既存のバケットを選択。無い場合は新規作成 |
-| Queue (`MAIL_QUEUE`) | 非同期メール処理用キューを自動作成 (Workers Paid プランが必要) |
+| `MAIL_DOMAIN` | 受信メールアドレスのドメイン。自分が所有するドメインに変更 |
 | `JWT_SECRET` | JWT 署名用シークレット。`openssl rand -hex 32` などで生成して設定 |
 
 `SEND_EMAIL` (メール送信) と `RATE_LIMITER` (ブルートフォース対策) のバインディングも自動で設定されます。D1 マイグレーションは deploy スクリプト内で自動適用されます。
 
+### Queues を使う場合 (オプション)
+
+非同期メール処理用の Queue (`MAIL_QUEUE`) はデフォルトで無効です。使用する場合は `wrangler.toml` の以下のコメントを外してください (Workers Paid プランが必要)：
+
+```toml
+[[queues.producers]]
+binding = "MAIL_QUEUE"
+queue   = "mailworker-queue"
+```
+
+Deploy to Cloudflare ボタン経由なら有効化した状態でデプロイすると自動でキューが作成されます。手動の場合は `npx wrangler queues create mailworker-queue` で作成してください。
+
 ### デプロイ後の設定
 
 1. **Email Routing の有効化**: Cloudflare ダッシュボード → 対象ゾーン → **Email → Email Routing** を有効化し、受信ルールの宛先にこの Worker を指定してください (Email Workers による受信)。送信元アドレスも Email Routing で検証が必要です。
-2. **MAIL_DOMAIN の変更**: 複製されたリポジトリの `wrangler.toml` で `MAIL_DOMAIN` を自分のドメインに変更してください。
+2. **MAIL_DOMAIN を設定し忘れた場合**: ダッシュボードの Worker → 設定 → 変数、または複製されたリポジトリの `wrangler.toml` で変更できます。
 3. **JWT_SECRET 未設定の場合**: `npx wrangler secret put JWT_SECRET` で設定できます (未設定のままではログインできません)。
 
 ---
@@ -56,7 +68,7 @@ npx wrangler d1 create mail-app-db
 # R2 バケットを作成
 npx wrangler r2 bucket create mailworker-bucket
 
-# Queue を作成 (Workers Paid プランが必要)
+# (オプション) Queue を使う場合のみ作成 (Workers Paid プランが必要)
 npx wrangler queues create mailworker-queue
 ```
 
@@ -65,7 +77,7 @@ npx wrangler queues create mailworker-queue
 - `database_id`: 上記で作成した D1 データベースの UUID
 - `MAIL_DOMAIN`: 受信メールアドレスのドメイン
 - `[[send_email]]`: Cloudflare ダッシュボードで Email Routing を有効化
-- `[[queues.producers]]`: 非同期メール処理用キュー
+- `[[queues.producers]]`: (オプション) Queue を使う場合はコメントを外す
 - Rate Limiter の `namespace_id`: Worker 内で一意な任意の正の整数 (ダッシュボードでの事前作成は不要)
 
 ### 4. シークレット変数の設定
@@ -125,7 +137,7 @@ npm run deploy
 | フレームワーク | Hono 4.x |
 | DB | Cloudflare D1 (SQLite) |
 | ストレージ | Cloudflare R2 |
-| キュー | Cloudflare Queues (非同期処理用) |
+| キュー | Cloudflare Queues (オプション・非同期処理用) |
 | メール受信 | Cloudflare Email Workers |
 | メール送信 | Cloudflare Email Sending (`send_email` binding) |
 | 認証 | JWT (HS256) + PBKDF2 パスワードハッシュ |

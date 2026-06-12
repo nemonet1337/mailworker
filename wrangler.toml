@@ -9,6 +9,8 @@ compatibility_date = "2026-05-18"
 #]
 
 [vars]
+# 受信メールアドレスのドメイン
+# Deploy to Cloudflare ボタン: デプロイ画面で自分のドメインに変更できます
 MAIL_DOMAIN = "nemonet.work"
 
 # D1 データベース
@@ -29,13 +31,13 @@ migrations_dir = "migrations"
 binding     = "BUCKET"
 bucket_name = "mailworker-bucket"
 
-# Queues (非同期メール処理用プロデューサー)
-# Deploy to Cloudflare ボタン: デプロイ時に自動プロビジョニングされます
+# Queues (非同期メール処理用プロデューサー) — オプション
+# 使用する場合は下の 2 行のコメントを外してください (Workers Paid プランが必要)
+# Deploy to Cloudflare ボタン: 有効化されていればデプロイ時に自動プロビジョニングされます
 # 手動セットアップ: wrangler queues create mailworker-queue
-# 注意: Queues の利用には Workers Paid プランが必要です
-[[queues.producers]]
-binding = "MAIL_QUEUE"
-queue   = "mailworker-queue"
+#[[queues.producers]]
+#binding = "MAIL_QUEUE"
+#queue   = "mailworker-queue"
 
 # メール送信 (Cloudflare Email Workers)
 # Cloudflare ダッシュボードで Email Routing を有効にしてください
