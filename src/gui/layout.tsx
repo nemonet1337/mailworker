@@ -184,7 +184,6 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
       />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <script src="https://unpkg.com/htmx.org@1.9.12" />
-      <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}' />
     </head>
     <body>
       <div class="app">
@@ -214,7 +213,6 @@ export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, c
       />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <script src="https://unpkg.com/htmx.org@1.9.12" />
-      <meta name="htmx-config" content='{"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true}]}' />
     </head>
     <body style="overflow:auto">
       {children as any}
