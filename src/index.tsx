@@ -219,7 +219,7 @@ app.get('/compose/drawer', async (c) => {
         </div>
         <div class="compose-body" style="padding:24px;text-align:center;color:var(--sub)">
           <p>送信元メールアドレスが設定されていません。</p>
-          <a href="/settings" style="color:var(--accent)">設定画面</a>でアドレスを追加してください。
+          <a href="/admin/addresses" style="color:var(--accent)">アドレス管理画面</a>でアドレスを追加してください。
         </div>
       </div>
     )
