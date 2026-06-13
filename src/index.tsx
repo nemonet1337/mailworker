@@ -138,7 +138,6 @@ app.post('/login', async (c) => {
   if (!c.env.JWT_SECRET) {
     return c.html(
       <LoginError title="サーバー設定エラー" desc="JWT_SECRET が未設定です。wrangler secret put JWT_SECRET で設定してください" />,
-      500,
     )
   }
 
@@ -147,7 +146,6 @@ app.post('/login', async (c) => {
   if (!allowed) {
     return c.html(
       <LoginError title="試行回数超過" desc="しばらくしてから再試行してください" />,
-      429,
     )
   }
 
@@ -155,12 +153,12 @@ app.post('/login', async (c) => {
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
   if (!email || !password) {
-    return c.html(<LoginError title="入力エラー" desc="メールアドレスとパスワードを入力してください" />, 400)
+    return c.html(<LoginError title="入力エラー" desc="メールアドレスとパスワードを入力してください" />)
   }
 
   const user = await c.env.DB.prepare('SELECT id, password_hash, is_admin FROM users WHERE email = ?').bind(email).first<{id:string;password_hash:string;is_admin:0|1}>()
   if (!user || !(await verifyPassword(password, user.password_hash))) {
-    return c.html(<LoginError title="ログイン失敗" desc="メールアドレスまたはパスワードが違います" />, 401)
+    return c.html(<LoginError title="ログイン失敗" desc="メールアドレスまたはパスワードが違います" />)
   }
 
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24
