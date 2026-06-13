@@ -40,6 +40,9 @@
   "dependencies": {
     "hono": "^4.12.23"
   },
+  "overrides": {
+    "esbuild": ">=0.28.1"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260607.1",
     "typescript": "^6.0.3",
