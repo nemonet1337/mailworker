@@ -202,7 +202,28 @@ app.get('/compose/drawer', async (c) => {
     'SELECT address FROM mail_addresses WHERE user_id = ? ORDER BY address'
   ).bind(user.id).all()
   const from_addresses = (rows.results as { address: string }[]).map((r) => r.address)
-  if (from_addresses.length === 0) return c.html('')
+  if (from_addresses.length === 0) {
+    return c.html(
+      <div class="compose-drawer" id="compose-drawer">
+        <div class="compose-header">
+          <span class="compose-title">新規メール</span>
+          <div class="compose-header-actions">
+            <button
+              class="icon-btn"
+              title="閉じる"
+              onclick="document.getElementById('compose-slot').innerHTML=''"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+        <div class="compose-body" style="padding:24px;text-align:center;color:var(--sub)">
+          <p>送信元メールアドレスが設定されていません。</p>
+          <a href="/settings" style="color:var(--accent)">設定画面</a>でアドレスを追加してください。
+        </div>
+      </div>
+    )
+  }
 
   const replyToId = c.req.query('replyTo')
   let replyTo: { subject: string; from_: string } | undefined
