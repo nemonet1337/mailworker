@@ -1,4 +1,5 @@
 import { FC } from 'hono/jsx'
+import { raw } from 'hono/html'
 
 type IconProps = {
   name: keyof typeof PATHS
@@ -59,8 +60,9 @@ export const Icon: FC<IconProps> = ({
       stroke-linecap="round"
       stroke-linejoin="round"
       style={`flex-shrink:0${style ? ';' + style : ''}`}
-      dangerouslySetInnerHTML={{ __html: pathHtml }}
-    />
+    >
+      {raw(pathHtml)}
+    </svg>
   )
 }
 
