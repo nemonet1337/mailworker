@@ -18,7 +18,12 @@ export async function authMiddleware(c: Context<AppEnv>, next: Next) {
   const token = getCookie(c, 'session')
   if (!token) return c.redirect('/login')
 
-  const payload = await verifyJwt(token, c.env.JWT_SECRET)
+  let payload = null
+  try {
+    payload = await verifyJwt(token, c.env.JWT_SECRET)
+  } catch {
+    // malformed token or crypto error — treat as unauthenticated
+  }
   if (!payload) return c.redirect('/login')
 
   const user = await c.env.DB.prepare('SELECT id, email, display_name, is_admin FROM users WHERE id = ?').bind(payload.sub).first()
