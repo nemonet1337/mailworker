@@ -48,7 +48,7 @@ app.get('/', async (c) => {
   } else {
     query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read
       FROM emails e
-      JOIN mail_addresses m ON m.address = e.to_address
+      JOIN mail_addresses m ON LOWER(m.address) = LOWER(e.to_address)
       WHERE m.user_id = ?
       ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}`
     params = [user.id]
@@ -163,7 +163,7 @@ app.post('/login', async (c) => {
 
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24
   const token = await createJwt({ sub: user.id, is_admin: user.is_admin, exp }, c.env.JWT_SECRET)
-  setCookie(c, 'session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Strict', maxAge: 60 * 60 * 24 })
+  setCookie(c, 'session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 })
   // sessionStorage にフラッシュを書いてからリダイレクト (トースト表示用)
   return c.html(`<script>sessionStorage.setItem('__flash',JSON.stringify({msg:'ログインしました',type:'success'}));location.replace('/')</script>`)
 })
@@ -456,6 +456,20 @@ app.post('/admin/users/:id/delete', async (c) => {
     return c.html('<p class="text-red-500 text-sm">自分自身は削除できません</p>', 400)
   }
   await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(targetId).run()
+  return c.html('')
+})
+
+app.post('/admin/users/:id/password', async (c) => {
+  const currentUser = c.get('user')!
+  const targetId = c.req.param('id')
+  const body = await c.req.parseBody()
+  const newPassword = String(body.password || '')
+  if (newPassword.length < 8) {
+    return c.html('<p style="color:var(--coral);font-size:12px">パスワードは8文字以上で入力してください</p>', 400)
+  }
+  const passwordHash = await hashPassword(newPassword)
+  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(passwordHash, targetId).run()
+  c.header('HX-Trigger', JSON.stringify({ showToast: { message: 'パスワードを変更しました', type: 'success' } }))
   return c.html('')
 })
 

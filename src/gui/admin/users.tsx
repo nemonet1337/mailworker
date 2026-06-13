@@ -76,6 +76,14 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
                     </td>
                     <td style="color:var(--sub);font-size:12.5px">{u.created_at.slice(0, 10)}</td>
                     <td class="col-actions">
+                      <button
+                        class="icon-btn"
+                        title="パスワード変更"
+                        onclick={`document.getElementById('pw-dialog-${u.id}').style.display='flex'`}
+                        style="color:var(--sub)"
+                      >
+                        <Icon name="key" size={15} />
+                      </button>
                       {u.id !== currentUser.id && (
                         <button
                           class="icon-btn"
@@ -145,6 +153,45 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
           </form>
         </div>
       </div>
+
+      {users.map((u) => (
+        <div
+          key={u.id}
+          class="overlay"
+          id={`pw-dialog-${u.id}`}
+          style="display:none"
+          onclick={`if(event.target===this)this.style.display='none'`}
+        >
+          <div class="dialog">
+            <h3>パスワード変更</h3>
+            <p style="font-size:13px;color:var(--sub);margin-bottom:16px">{u.display_name} ({u.email})</p>
+            <form
+              hx-post={`/admin/users/${u.id}/password`}
+              hx-target={`#pw-result-${u.id}`}
+              hx-swap="innerHTML"
+              {...({
+                'hx-on::after-request': `if(event.detail.successful){document.getElementById('pw-dialog-${u.id}').style.display='none';this.reset()}`,
+              } as object)}
+            >
+              <div class="form-field">
+                <label class="form-label">新しいパスワード</label>
+                <input class="form-input" name="password" type="password" required minlength={8} placeholder="8文字以上" />
+              </div>
+              <div id={`pw-result-${u.id}`} style="margin-bottom:12px" />
+              <div class="dialog-actions">
+                <button
+                  type="button"
+                  class="btn-ghost"
+                  onclick={`document.getElementById('pw-dialog-${u.id}').style.display='none'`}
+                >
+                  キャンセル
+                </button>
+                <button type="submit" class="btn-primary">変更</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ))}
 
       <script dangerouslySetInnerHTML={{ __html: `
         var _activeFilter = 'all';

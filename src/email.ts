@@ -15,9 +15,9 @@ export default {
     const bodyHtml = parts.find(p => mimeMainType(p) === 'text/html')?.body.trim() ?? null
 
     await env.DB.prepare(
-      `INSERT INTO emails (id, message_id, to_address, from_, subject, body_text, body_html, received_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(emailId, messageId, message.to, message.from, subject, bodyText, bodyHtml, now).run()
+      `INSERT INTO emails (id, message_id, to_address, from_, subject, body_text, body_html, received_at, is_read)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`
+    ).bind(emailId, messageId, message.to.toLowerCase(), message.from, subject, bodyText, bodyHtml, now).run()
 
     // 添付ファイルを R2 に保存
     for (const part of parts) {

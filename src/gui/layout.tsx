@@ -137,7 +137,11 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       </>
     )}
 
-    <div class="sidebar-footer">
+    <div
+      class="sidebar-footer"
+      style="cursor:pointer;position:relative"
+      onclick="var m=document.getElementById('user-menu');m.style.display=m.style.display==='block'?'none':'block'"
+    >
       <div class="avatar">{initials(user.display_name)}</div>
       <div class="user-info">
         <div class="user-name" style="display:flex;align-items:center;gap:4px">
@@ -148,11 +152,22 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
         </div>
         <div class="user-email">{user.email}</div>
       </div>
-      <form hx-post="/logout" hx-swap="none">
-        <button class="icon-btn" type="submit" title="ログアウト">
-          <Icon name="x" size={16} />
-        </button>
-      </form>
+      <div
+        id="user-menu"
+        style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:100"
+        onclick="event.stopPropagation()"
+      >
+        <form hx-post="/logout" hx-swap="none">
+          <button
+            type="submit"
+            style="width:100%;display:flex;align-items:center;gap:8px;padding:12px 16px;border:none;background:none;cursor:pointer;font-size:13.5px;color:var(--text);text-align:left"
+            onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='none'"
+          >
+            <Icon name="log-out" size={14} />
+            ログアウト
+          </button>
+        </form>
+      </div>
     </div>
   </aside>
 )
@@ -195,6 +210,7 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
       <div class="toast-container" id="toast-container" aria-live="polite" />
 
       <script dangerouslySetInnerHTML={{ __html: toastScript }} />
+      <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('click',function(e){var m=document.getElementById('user-menu');if(m&&!m.closest('.sidebar-footer').contains(e.target))m.style.display='none'})` }} />
     </body>
   </html>
 )
