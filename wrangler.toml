@@ -46,12 +46,13 @@ name = "SEND_EMAIL"
 
 # レートリミッター (ブルートフォース対策)
 # namespace_id はこの Worker 内で一意な任意の正の整数 (ダッシュボードでの事前作成は不要)
-[[unsafe.bindings]]
+[[ratelimits]]
 name         = "RATE_LIMITER"
-type         = "ratelimit"
 namespace_id = "1001"
-simple_limit = 5
-period       = 60
+
+  [ratelimits.simple]
+  limit  = 5
+  period = 60
 
 [observability]
 enabled = true
