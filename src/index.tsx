@@ -7,7 +7,7 @@ import { SetupPage, SetupError } from './gui/setup'
 import { UsersPage } from './gui/admin/users'
 import { AddressesPage } from './gui/admin/addresses'
 import { DashboardPage } from './gui/admin/dashboard'
-import { InboxPage, MailDetailPartial } from './gui/inbox'
+import { InboxPage, MailDetailPartial, SentPage, StarredPage, TrashPage, DraftsPage, SpamPage } from './gui/inbox'
 import { SettingsPage } from './gui/settings'
 import { ComposePage, ComposeDrawerPartial } from './gui/compose'
 import { adminMiddleware } from './middleware/admin'
@@ -41,15 +41,15 @@ app.get('/', async (c) => {
   let query: string
   let params: unknown[]
   if (validAddr) {
-    query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read
-      FROM emails e WHERE e.to_address = ?
+    query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read, e.is_starred
+      FROM emails e WHERE e.to_address = ? AND e.is_trashed = 0 AND (e.folder = 'inbox' OR e.folder IS NULL)
       ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}`
     params = [validAddr]
   } else {
-    query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read
+    query = `SELECT e.id, e.from_, e.subject, e.received_at, e.is_read, e.is_starred
       FROM emails e
       JOIN mail_addresses m ON LOWER(m.address) = LOWER(e.to_address)
-      WHERE m.user_id = ?
+      WHERE m.user_id = ? AND e.is_trashed = 0 AND (e.folder = 'inbox' OR e.folder IS NULL)
       ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}`
     params = [user.id]
   }
@@ -295,6 +295,14 @@ app.post('/compose', async (c) => {
 
     const message = new EmailMessage(from_, to, readable)
     await c.env.SEND_EMAIL.send(message)
+
+    // 送信済みフォルダに保存
+    const sentId = crypto.randomUUID()
+    const now = new Date().toISOString()
+    await c.env.DB.prepare(
+      `INSERT INTO emails (id, message_id, to_address, from_, subject, body_text, received_at, is_read, folder)
+       VALUES (?, '', ?, ?, ?, ?, ?, 1, 'sent')`
+    ).bind(sentId, to, from_, subject, text, now).run()
   } catch (e) {
     console.error('Email send error:', e)
     return c.html('<p class="text-red-500 text-sm">送信に失敗しました。しばらくしてから再試行してください</p>', 502)
@@ -308,12 +316,12 @@ app.post('/compose', async (c) => {
 app.get('/mail/:id', async (c) => {
   const user = c.get('user')!
   const email = await c.env.DB.prepare(`
-    SELECT e.id, e.from_, e.subject, e.received_at, e.body_text, e.body_html
+    SELECT e.id, e.from_, e.to_address, e.subject, e.received_at, e.body_text, e.body_html, e.is_starred, e.is_trashed, e.folder
     FROM emails e
-    JOIN mail_addresses m ON m.address = e.to_address
+    JOIN mail_addresses m ON (LOWER(m.address) = LOWER(e.to_address) OR LOWER(m.address) = LOWER(e.from_))
     WHERE e.id = ? AND m.user_id = ?
   `).bind(c.req.param('id'), user.id)
-    .first<{id:string;from_:string;subject:string;received_at:string;body_text:string;body_html:string|null}>()
+    .first<{id:string;from_:string;to_address:string;subject:string;received_at:string;body_text:string;body_html:string|null;is_starred:number;is_trashed:number;folder:string}>()
   if (!email) return c.text('Not Found', 404)
   const attachments = await c.env.DB.prepare(
     'SELECT id, filename, content_type, size FROM attachments WHERE email_id = ?'
@@ -365,14 +373,79 @@ app.post('/mail/:id/unread', async (c) => {
   return c.body('')
 })
 
-// POST /mail/:id/delete — メール削除 (D1 + R2)
+// POST /mail/:id/trash — ゴミ箱へ移動
+app.post('/mail/:id/trash', async (c) => {
+  const user = c.get('user')!
+  const emailId = c.req.param('id')
+  await c.env.DB.prepare(`
+    UPDATE emails SET is_trashed = 1
+    WHERE id = ? AND (to_address IN (SELECT address FROM mail_addresses WHERE user_id = ?)
+      OR from_ IN (SELECT address FROM mail_addresses WHERE user_id = ?))
+  `).bind(emailId, user.id, user.id).run()
+  return c.html('')
+})
+
+// POST /mail/:id/restore — ゴミ箱から復元
+app.post('/mail/:id/restore', async (c) => {
+  const user = c.get('user')!
+  const emailId = c.req.param('id')
+  await c.env.DB.prepare(`
+    UPDATE emails SET is_trashed = 0
+    WHERE id = ? AND (to_address IN (SELECT address FROM mail_addresses WHERE user_id = ?)
+      OR from_ IN (SELECT address FROM mail_addresses WHERE user_id = ?))
+  `).bind(emailId, user.id, user.id).run()
+  return c.html('')
+})
+
+// POST /mail/:id/star — お気に入りに追加
+app.post('/mail/:id/star', async (c) => {
+  const user = c.get('user')!
+  const emailId = c.req.param('id')
+  await c.env.DB.prepare(`
+    UPDATE emails SET is_starred = 1
+    WHERE id = ? AND (to_address IN (SELECT address FROM mail_addresses WHERE user_id = ?)
+      OR from_ IN (SELECT address FROM mail_addresses WHERE user_id = ?))
+  `).bind(emailId, user.id, user.id).run()
+  // 更新後の詳細を返す
+  const email = await c.env.DB.prepare(`
+    SELECT e.id, e.from_, e.to_address, e.subject, e.received_at, e.body_text, e.body_html, e.is_starred, e.is_trashed, e.folder
+    FROM emails e
+    JOIN mail_addresses m ON (LOWER(m.address) = LOWER(e.to_address) OR LOWER(m.address) = LOWER(e.from_))
+    WHERE e.id = ? AND m.user_id = ?
+  `).bind(emailId, user.id).first<{id:string;from_:string;to_address:string;subject:string;received_at:string;body_text:string;body_html:string|null;is_starred:number;is_trashed:number;folder:string}>()
+  if (!email) return c.text('Not Found', 404)
+  const attachments = await c.env.DB.prepare('SELECT id, filename, content_type, size FROM attachments WHERE email_id = ?').bind(emailId).all()
+  return c.html(<MailDetailPartial {...email} attachments={attachments.results as never[]} />)
+})
+
+// POST /mail/:id/unstar — お気に入りを解除
+app.post('/mail/:id/unstar', async (c) => {
+  const user = c.get('user')!
+  const emailId = c.req.param('id')
+  await c.env.DB.prepare(`
+    UPDATE emails SET is_starred = 0
+    WHERE id = ? AND (to_address IN (SELECT address FROM mail_addresses WHERE user_id = ?)
+      OR from_ IN (SELECT address FROM mail_addresses WHERE user_id = ?))
+  `).bind(emailId, user.id, user.id).run()
+  const email = await c.env.DB.prepare(`
+    SELECT e.id, e.from_, e.to_address, e.subject, e.received_at, e.body_text, e.body_html, e.is_starred, e.is_trashed, e.folder
+    FROM emails e
+    JOIN mail_addresses m ON (LOWER(m.address) = LOWER(e.to_address) OR LOWER(m.address) = LOWER(e.from_))
+    WHERE e.id = ? AND m.user_id = ?
+  `).bind(emailId, user.id).first<{id:string;from_:string;to_address:string;subject:string;received_at:string;body_text:string;body_html:string|null;is_starred:number;is_trashed:number;folder:string}>()
+  if (!email) return c.text('Not Found', 404)
+  const attachments = await c.env.DB.prepare('SELECT id, filename, content_type, size FROM attachments WHERE email_id = ?').bind(emailId).all()
+  return c.html(<MailDetailPartial {...email} attachments={attachments.results as never[]} />)
+})
+
+// POST /mail/:id/delete — 完全削除 (D1 + R2)
 app.post('/mail/:id/delete', async (c) => {
   const user = c.get('user')!
   const emailId = c.req.param('id')
 
   const email = await c.env.DB.prepare(`
     SELECT e.id FROM emails e
-    JOIN mail_addresses m ON m.address = e.to_address
+    JOIN mail_addresses m ON (LOWER(m.address) = LOWER(e.to_address) OR LOWER(m.address) = LOWER(e.from_))
     WHERE e.id = ? AND m.user_id = ?
   `).bind(emailId, user.id).first()
   if (!email) return c.text('Not Found', 404)
@@ -386,6 +459,80 @@ app.post('/mail/:id/delete', async (c) => {
 
   await c.env.DB.prepare('DELETE FROM emails WHERE id = ?').bind(emailId).run()
   return c.html('')
+})
+
+// GET /sent — 送信済みメール
+app.get('/sent', async (c) => {
+  const user = c.get('user')!
+  const page = Math.max(1, Number(c.req.query('page') ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+  const result = await c.env.DB.prepare(`
+    SELECT e.id, e.from_, e.to_address, e.subject, e.received_at, 1 as is_read, e.is_starred
+    FROM emails e
+    JOIN mail_addresses m ON LOWER(m.address) = LOWER(e.from_)
+    WHERE m.user_id = ? AND e.folder = 'sent' AND e.is_trashed = 0
+    ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
+  `).bind(user.id).all()
+  const rows = result.results as EmailRow[]
+  const hasNext = rows.length > PAGE_SIZE
+  return c.html(<SentPage currentUser={user} emails={hasNext ? rows.slice(0, PAGE_SIZE) : rows} page={page} hasNext={hasNext} />)
+})
+
+// GET /starred — お気に入り
+app.get('/starred', async (c) => {
+  const user = c.get('user')!
+  const page = Math.max(1, Number(c.req.query('page') ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+  const result = await c.env.DB.prepare(`
+    SELECT e.id, e.from_, e.subject, e.received_at, e.is_read, e.is_starred
+    FROM emails e
+    JOIN mail_addresses m ON (LOWER(m.address) = LOWER(e.to_address) OR LOWER(m.address) = LOWER(e.from_))
+    WHERE m.user_id = ? AND e.is_starred = 1 AND e.is_trashed = 0
+    ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
+  `).bind(user.id).all()
+  const rows = result.results as EmailRow[]
+  const hasNext = rows.length > PAGE_SIZE
+  return c.html(<StarredPage currentUser={user} emails={hasNext ? rows.slice(0, PAGE_SIZE) : rows} page={page} hasNext={hasNext} />)
+})
+
+// GET /trash — ゴミ箱
+app.get('/trash', async (c) => {
+  const user = c.get('user')!
+  const page = Math.max(1, Number(c.req.query('page') ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+  const result = await c.env.DB.prepare(`
+    SELECT e.id, e.from_, e.subject, e.received_at, e.is_read, e.is_starred
+    FROM emails e
+    JOIN mail_addresses m ON (LOWER(m.address) = LOWER(e.to_address) OR LOWER(m.address) = LOWER(e.from_))
+    WHERE m.user_id = ? AND e.is_trashed = 1
+    ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
+  `).bind(user.id).all()
+  const rows = result.results as EmailRow[]
+  const hasNext = rows.length > PAGE_SIZE
+  return c.html(<TrashPage currentUser={user} emails={hasNext ? rows.slice(0, PAGE_SIZE) : rows} page={page} hasNext={hasNext} />)
+})
+
+// GET /drafts — 下書き
+app.get('/drafts', async (c) => {
+  const user = c.get('user')!
+  return c.html(<DraftsPage currentUser={user} />)
+})
+
+// GET /spam — スパム
+app.get('/spam', async (c) => {
+  const user = c.get('user')!
+  const page = Math.max(1, Number(c.req.query('page') ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+  const result = await c.env.DB.prepare(`
+    SELECT e.id, e.from_, e.subject, e.received_at, e.is_read, e.is_starred
+    FROM emails e
+    JOIN mail_addresses m ON LOWER(m.address) = LOWER(e.to_address)
+    WHERE m.user_id = ? AND e.folder = 'spam' AND e.is_trashed = 0
+    ORDER BY e.received_at DESC LIMIT ${PAGE_SIZE + 1} OFFSET ${offset}
+  `).bind(user.id).all()
+  const rows = result.results as EmailRow[]
+  const hasNext = rows.length > PAGE_SIZE
+  return c.html(<SpamPage currentUser={user} emails={hasNext ? rows.slice(0, PAGE_SIZE) : rows} page={page} hasNext={hasNext} />)
 })
 
 app.get('/admin/dashboard', async (c) => {

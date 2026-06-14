@@ -3,7 +3,7 @@ import { SessionUser } from '../types'
 import { CSS } from './styles'
 import { Icon, LogoMark } from './icons'
 
-type ActivePage = 'inbox' | 'users' | 'addresses' | 'dashboard' | 'settings'
+type ActivePage = 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'starred' | 'users' | 'addresses' | 'dashboard' | 'settings'
 
 type LayoutProps = {
   title: string
@@ -151,6 +151,41 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       />
     </a>
 
+    <a href="/starred" class={`nav-item${active === 'starred' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="star" size={16} />
+      </span>
+      <span class="nav-item-label">お気に入り</span>
+    </a>
+
+    <a href="/sent" class={`nav-item${active === 'sent' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="send" size={16} />
+      </span>
+      <span class="nav-item-label">送信済み</span>
+    </a>
+
+    <a href="/drafts" class={`nav-item${active === 'drafts' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="drafts" size={16} />
+      </span>
+      <span class="nav-item-label">下書き</span>
+    </a>
+
+    <a href="/spam" class={`nav-item${active === 'spam' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="alert" size={16} />
+      </span>
+      <span class="nav-item-label">スパム</span>
+    </a>
+
+    <a href="/trash" class={`nav-item${active === 'trash' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="trash" size={16} />
+      </span>
+      <span class="nav-item-label">ゴミ箱</span>
+    </a>
+
     <div
       class="nav-section-label"
       style="cursor:default"
@@ -253,7 +288,7 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link
-        href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
       />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
@@ -291,7 +326,7 @@ export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, c
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link
-        href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
       />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
