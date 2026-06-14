@@ -5,9 +5,10 @@ import { SessionUser } from '../../types'
 
 type UserRow = SessionUser & { created_at: string }
 
-export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
+export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[]; registrationAllowed: boolean }> = ({
   currentUser,
   users,
+  registrationAllowed,
 }) => {
   const adminCount = users.filter((u) => u.is_admin === 1).length
   return (
@@ -22,13 +23,22 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
             <div class="page-actions">
               <button
                 class="btn-primary"
-                onclick="document.getElementById('invite-dialog').style.display='flex'"
+                disabled={!registrationAllowed}
+                title={registrationAllowed ? undefined : 'ALLOW_REGISTRATION が "false" のため無効'}
+                onclick={registrationAllowed ? "document.getElementById('invite-dialog').style.display='flex'" : undefined}
+                style={registrationAllowed ? undefined : 'opacity:0.45;cursor:not-allowed'}
               >
                 <Icon name="plus" size={14} />
                 招待
               </button>
             </div>
           </div>
+
+          {!registrationAllowed && (
+            <div style="margin-bottom:16px;padding:10px 14px;background:var(--bg-secondary,#f8f8f8);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-secondary)">
+              新規ユーザー登録は無効です。有効化するには <code>ALLOW_REGISTRATION</code> を <code>"true"</code> に設定してください。
+            </div>
+          )}
 
           <div class="filter-row">
             <input

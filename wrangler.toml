@@ -13,6 +13,11 @@ compatibility_date = "2026-05-18"
 # Deploy to Cloudflare ボタン: デプロイ画面で自分のドメインに変更できます
 MAIL_DOMAIN = "nemonet.work"
 
+# 管理者による新規ユーザー作成を許可するか (デフォルト: "false" = 禁止)
+# 有効化: wrangler.toml を "true" に変更して再デプロイ、または
+#          Cloudflare ダッシュボード > Workers > 設定 > 変数 で変更
+ALLOW_REGISTRATION = "false"
+
 # D1 データベース
 # Deploy to Cloudflare ボタン: デプロイ画面で既存 DB の選択 / 新規作成が可能
 #   (作成されたリソースの ID で database_id が自動的に書き換えられます)

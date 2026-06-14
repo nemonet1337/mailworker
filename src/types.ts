@@ -13,6 +13,8 @@ export type AppEnv = {
     VAPID_PRIVATE_KEY_JWK?: string
     // mailto: or https: VAPID subject
     VAPID_SUBJECT?: string
+    // "true" に設定すると管理者がユーザーを新規作成できる (デフォルト: false)
+    ALLOW_REGISTRATION?: string
   }
   Variables: {
     user?: SessionUser

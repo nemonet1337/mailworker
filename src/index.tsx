@@ -636,10 +636,14 @@ app.get('/admin/dashboard', async (c) => {
 app.get('/admin/users', async (c) => {
   const currentUser = c.get('user')!
   const users = await c.env.DB.prepare('SELECT id, email, display_name, is_admin, created_at FROM users ORDER BY created_at DESC').all()
-  return c.html(<UsersPage currentUser={currentUser} users={users.results as never[]} />)
+  const registrationAllowed = c.env.ALLOW_REGISTRATION === 'true'
+  return c.html(<UsersPage currentUser={currentUser} users={users.results as never[]} registrationAllowed={registrationAllowed} />)
 })
 
 app.post('/admin/users', async (c) => {
+  if (c.env.ALLOW_REGISTRATION !== 'true') {
+    return c.html('<p style="color:var(--coral-deep);font-size:13px">新規ユーザー登録は無効になっています。ALLOW_REGISTRATION を "true" に設定してください。</p>', 403)
+  }
   const body = await c.req.parseBody()
   const displayName = String(body.display_name || '').trim()
   const email = String(body.email || '').trim().toLowerCase()
