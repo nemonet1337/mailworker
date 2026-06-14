@@ -39,6 +39,35 @@ export const CSS = `
   --font-mono: ui-monospace, 'SF Mono', 'Consolas', Menlo, monospace;
 }
 
+/* ── Dark mode ─────────────────────────────── */
+[data-theme="dark"] {
+  --ink:        #f9fafb;
+  --ink-soft:   #e5e7eb;
+  --sub:        #9ca3af;
+  --mid:        #6b7280;
+  --line:       #374151;
+  --line-soft:  #1f2937;
+  --bg:         #111827;
+  --surface:    #1f2937;
+  --surface-2:  #374151;
+  --accent-soft: rgba(26,115,232,.15);
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.4), 0 0 0 1px rgba(0,0,0,.3);
+  --shadow-md:  0 4px 12px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.4);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.4);
+}
+
+/* ── Accent color themes ──────────────────── */
+[data-accent="green"]  { --accent: #0f9d58; --accent-soft: #e6f4ea; --accent-deep: #0a7d44; --accent-hover: #0d8f4e; }
+[data-accent="purple"] { --accent: #7c3aed; --accent-soft: #ede9fe; --accent-deep: #5b21b6; --accent-hover: #6d28d9; }
+[data-accent="red"]    { --accent: #d93025; --accent-soft: #fce8e6; --accent-deep: #b31412; --accent-hover: #c5221f; }
+[data-accent="orange"] { --accent: #e37400; --accent-soft: #fef3e2; --accent-deep: #c05e00; --accent-hover: #d16b00; }
+
+/* Dark + accent combinations (accent-soft override) */
+[data-theme="dark"][data-accent="green"]  { --accent-soft: rgba(15,157,88,.15); }
+[data-theme="dark"][data-accent="purple"] { --accent-soft: rgba(124,58,237,.15); }
+[data-theme="dark"][data-accent="red"]    { --accent-soft: rgba(217,48,37,.15); }
+[data-theme="dark"][data-accent="orange"] { --accent-soft: rgba(227,116,0,.15); }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
@@ -967,4 +996,35 @@ table.dt { width: 100%; border-collapse: collapse; }
     padding: 28px 24px;
   }
 }
+
+/* ── Theme mode buttons ───────────────────── */
+.theme-mode-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.theme-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+.theme-mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+
+/* ── Accent color swatches ────────────────── */
+.accent-swatch {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: transform 0.12s;
+  outline: 3px solid transparent;
+  outline-offset: 3px;
+}
+.accent-swatch:hover { transform: scale(1.12); }
+.accent-swatch.active { outline-color: var(--ink); }
 `

@@ -20,6 +20,8 @@ if ('serviceWorker' in navigator) {
 }
 `
 
+const themeInitScript = `(function(){var t=localStorage.getItem('wm-theme')||'system';var a=localStorage.getItem('wm-accent')||'blue';var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(dark)document.documentElement.setAttribute('data-theme','dark');if(a&&a!=='blue')document.documentElement.setAttribute('data-accent',a);})();`
+
 const toastScript = `
 (function () {
   function showToast(message, type, desc) {
@@ -186,6 +188,13 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       <span class="nav-item-label">ゴミ箱</span>
     </a>
 
+    <a href="/settings" class={`nav-item${active === 'settings' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="settings" size={16} />
+      </span>
+      <span class="nav-item-label">設定</span>
+    </a>
+
     <div
       class="nav-section-label"
       style="cursor:default"
@@ -291,6 +300,7 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
       />
+      <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <script src="https://unpkg.com/htmx.org@1.9.12" />
     </head>
@@ -329,6 +339,7 @@ export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, c
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
       />
+      <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <script src="https://unpkg.com/htmx.org@1.9.12" />
     </head>
