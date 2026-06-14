@@ -515,6 +515,141 @@ app.post('/admin/addresses/:id/delete', async (c) => {
   return c.html('')
 })
 
+// ── PWA: マニフェスト ──────────────────────────────────────────────────────
+app.get('/manifest.json', (c) => {
+  c.header('Content-Type', 'application/manifest+json')
+  c.header('Cache-Control', 'public, max-age=3600')
+  return c.json({
+    name: 'WorkerMail',
+    short_name: 'WorkerMail',
+    description: 'nemonet.work のメールアプリ',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#fbf8f3',
+    theme_color: '#1f1a16',
+    lang: 'ja',
+    orientation: 'any',
+    icons: [
+      {
+        src: '/icon.svg',
+        type: 'image/svg+xml',
+        sizes: 'any',
+        purpose: 'any',
+      },
+      {
+        src: '/icon-maskable.svg',
+        type: 'image/svg+xml',
+        sizes: 'any',
+        purpose: 'maskable',
+      },
+    ],
+    shortcuts: [
+      { name: '受信箱', url: '/', description: '受信トレイを開く' },
+      { name: 'メール作成', url: '/compose', description: '新しいメールを作成' },
+    ],
+  })
+})
+
+// ── PWA: アイコン ─────────────────────────────────────────────────────────
+const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="38" fill="#1f1a16"/>
+  <rect x="30" y="56" width="132" height="92" rx="8" fill="none" stroke="#fbf8f3" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M30 70 96 114 162 70" fill="none" stroke="#fbf8f3" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="148" cy="56" r="22" fill="#d05a35" stroke="#1f1a16" stroke-width="5"/>
+</svg>`
+
+const ICON_MASKABLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#1f1a16"/>
+  <rect x="36" y="62" width="120" height="84" rx="8" fill="none" stroke="#fbf8f3" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M36 76 96 114 156 76" fill="none" stroke="#fbf8f3" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="140" cy="62" r="19" fill="#d05a35" stroke="#1f1a16" stroke-width="4"/>
+</svg>`
+
+app.get('/icon.svg', (c) => {
+  c.header('Content-Type', 'image/svg+xml')
+  c.header('Cache-Control', 'public, max-age=86400')
+  return c.text(ICON_SVG)
+})
+
+app.get('/icon-maskable.svg', (c) => {
+  c.header('Content-Type', 'image/svg+xml')
+  c.header('Cache-Control', 'public, max-age=86400')
+  return c.text(ICON_MASKABLE_SVG)
+})
+
+// ── PWA: サービスワーカー ──────────────────────────────────────────────────
+const SW_JS = `
+const CACHE = 'wm-v1';
+const FONTS = 'wm-fonts-v1';
+const CDN   = 'wm-cdn-v1';
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(['/manifest.json', '/icon.svg', '/icon-maskable.svg']))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys()
+      .then(ks => Promise.all(
+        ks.filter(k => ![CACHE, FONTS, CDN].includes(k)).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const u = new URL(req.url);
+
+  // Google Fonts: cache-first
+  if (/fonts\\.(googleapis|gstatic)\\.com/.test(u.hostname)) {
+    e.respondWith(
+      caches.open(FONTS).then(c =>
+        c.match(req).then(hit => hit || fetch(req).then(r => { c.put(req, r.clone()); return r; }))
+      )
+    );
+    return;
+  }
+
+  // CDN (unpkg): cache-first
+  if (u.hostname === 'unpkg.com') {
+    e.respondWith(
+      caches.open(CDN).then(c =>
+        c.match(req).then(hit => hit || fetch(req).then(r => { c.put(req, r.clone()); return r; }))
+      )
+    );
+    return;
+  }
+
+  // Same origin: skip dynamic API paths, handle shell pages
+  if (u.origin === self.location.origin) {
+    const skip = ['/mail/', '/sidebar/', '/compose/drawer', '/admin/', '/attachments/', '/sw.js'];
+    if (skip.some(p => u.pathname.startsWith(p))) return;
+
+    e.respondWith(
+      fetch(req, { credentials: 'same-origin' })
+        .then(r => {
+          if (r.ok) caches.open(CACHE).then(c => c.put(req, r.clone()));
+          return r;
+        })
+        .catch(() => caches.match(req))
+    );
+  }
+});
+`
+
+app.get('/sw.js', (c) => {
+  c.header('Content-Type', 'application/javascript; charset=utf-8')
+  c.header('Service-Worker-Allowed', '/')
+  c.header('Cache-Control', 'no-cache, no-store, must-revalidate')
+  return c.text(SW_JS)
+})
+
 // 非 ASCII 文字を含むメールヘッダーを RFC 2047 base64 エンコード
 function encodeMailHeader(value: string): string {
   if (!/[^\x00-\x7F]/.test(value)) return value
