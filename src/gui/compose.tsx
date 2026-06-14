@@ -89,16 +89,16 @@ export const ComposeDrawerPartial: FC<{
       </div>
     </div>
 
-    <div class="compose-body">
-      <form
-        id="compose-drawer-form"
-        hx-post="/compose"
-        hx-target="#compose-drawer-result"
-        hx-swap="innerHTML"
-        {...({
-          'hx-on::after-request': "if(event.detail.successful){document.getElementById('compose-slot').innerHTML='';window.__showToast&&window.__showToast('送信しました','success')}",
-        } as object)}
-      >
+    <form
+      id="compose-drawer-form"
+      hx-post="/compose"
+      hx-target="#compose-drawer-result"
+      hx-swap="innerHTML"
+      {...({
+        'hx-on::after-request': "if(event.detail.successful){document.getElementById('compose-slot').innerHTML='';window.__showToast&&window.__showToast('送信しました','success')}",
+      } as object)}
+    >
+      <div class="compose-body">
         <div class="compose-row">
           <label>From</label>
           <select name="from_" required>
@@ -131,15 +131,15 @@ export const ComposeDrawerPartial: FC<{
           class="compose-textarea"
           placeholder="本文を入力..."
         />
-      </form>
-    </div>
+      </div>
 
-    <div class="compose-toolbar">
-      <button type="submit" class="btn-primary" form="compose-drawer-form">
-        <Icon name="send" size={14} />
-        送信
-      </button>
-      <div id="compose-drawer-result" class="compose-save" />
-    </div>
+      <div class="compose-toolbar">
+        <button type="submit" class="btn-primary">
+          <Icon name="send" size={14} />
+          送信
+        </button>
+        <div id="compose-drawer-result" class="compose-save" />
+      </div>
+    </form>
   </div>
 )

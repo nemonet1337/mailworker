@@ -25,9 +25,13 @@ export type SessionUser = {
 export type EmailRow = {
   id: string
   from_: string
+  to_address?: string
   subject: string
   received_at: string
   is_read: number
+  is_starred?: number
+  is_trashed?: number
+  folder?: string
   body_text?: string
 }
 

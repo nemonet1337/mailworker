@@ -3,7 +3,7 @@ import { SessionUser } from '../types'
 import { CSS } from './styles'
 import { Icon, LogoMark } from './icons'
 
-type ActivePage = 'inbox' | 'users' | 'addresses' | 'dashboard' | 'settings'
+type ActivePage = 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'starred' | 'users' | 'addresses' | 'dashboard' | 'settings'
 
 type LayoutProps = {
   title: string
@@ -149,6 +149,41 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
         hx-target="this"
         hx-swap="innerHTML"
       />
+    </a>
+
+    <a href="/starred" class={`nav-item${active === 'starred' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="star" size={16} />
+      </span>
+      <span class="nav-item-label">お気に入り</span>
+    </a>
+
+    <a href="/sent" class={`nav-item${active === 'sent' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="send" size={16} />
+      </span>
+      <span class="nav-item-label">送信済み</span>
+    </a>
+
+    <a href="/drafts" class={`nav-item${active === 'drafts' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="drafts" size={16} />
+      </span>
+      <span class="nav-item-label">下書き</span>
+    </a>
+
+    <a href="/spam" class={`nav-item${active === 'spam' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="alert" size={16} />
+      </span>
+      <span class="nav-item-label">スパム</span>
+    </a>
+
+    <a href="/trash" class={`nav-item${active === 'trash' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="trash" size={16} />
+      </span>
+      <span class="nav-item-label">ゴミ箱</span>
     </a>
 
     <div
