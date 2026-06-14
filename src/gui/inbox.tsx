@@ -54,7 +54,7 @@ export const MailRows: FC<{ emails: EmailRow[] }> = ({ emails }) => (
           hx-target="#read-pane"
           hx-swap="innerHTML"
           {...({
-            'hx-on::after-request': `htmx.ajax('POST','/mail/${m.id}/read',{swap:'none'});document.querySelectorAll('.mail-row').forEach(function(r){r.classList.remove('active')});this.classList.add('active');this.classList.remove('unread')`,
+            'hx-on::after-request': `htmx.ajax('POST','/mail/${m.id}/read',{swap:'none'});document.querySelectorAll('.mail-row').forEach(function(r){r.classList.remove('active')});this.classList.add('active');this.classList.remove('unread');var ma=document.getElementById('main-area');if(ma)ma.classList.add('show-detail')`,
           } as object)}
         >
           <div class="mail-avatar">{senderInitials(m.from_)}</div>
@@ -163,6 +163,13 @@ export const MailDetailPartial: FC<{
 }> = ({ id, from_, subject, received_at, body_text, body_html, attachments }) => (
   <>
     <div class="read-toolbar">
+      <button
+        class="tool-btn read-back-btn"
+        onclick="var ma=document.getElementById('main-area');if(ma)ma.classList.remove('show-detail')"
+      >
+        <Icon name="arrowLeft" size={14} />
+        戻る
+      </button>
       <button
         class="tool-btn"
         hx-get={`/compose/drawer?replyTo=${id}`}

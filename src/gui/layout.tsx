@@ -12,6 +12,14 @@ type LayoutProps = {
   children: unknown
 }
 
+const swScript = `
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
+`
+
 const toastScript = `
 (function () {
   function showToast(message, type, desc) {
@@ -62,6 +70,51 @@ function initials(name: string): string {
     .toUpperCase()
     .slice(0, 2) || '?'
 }
+
+const MobileNav: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active }) => (
+  <nav class="mobile-nav">
+    <a href="/" class={`mobile-nav-item${active === 'inbox' ? ' active' : ''}`}>
+      <Icon name="inbox" size={22} />
+      <span>受信箱</span>
+    </a>
+    <button
+      class="mobile-nav-item"
+      hx-get="/compose/drawer"
+      hx-target="#compose-slot"
+      hx-swap="innerHTML"
+    >
+      <Icon name="plus" size={22} strokeWidth={2.2} />
+      <span>作成</span>
+    </button>
+    <a href="/settings" class={`mobile-nav-item${active === 'settings' ? ' active' : ''}`}>
+      <Icon name="settings" size={22} />
+      <span>設定</span>
+    </a>
+    <div
+      class="mobile-nav-item"
+      style="position:relative"
+      onclick="var m=document.getElementById('mobile-user-menu');m.style.display=m.style.display==='block'?'none':'block'"
+    >
+      <div class="avatar" style="width:24px;height:24px;font-size:9px;border-radius:12px;flex-shrink:0">{initials(user.display_name)}</div>
+      <span>アカウント</span>
+      <div
+        id="mobile-user-menu"
+        style="display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;z-index:100;white-space:nowrap;min-width:160px"
+        onclick="event.stopPropagation()"
+      >
+        <form hx-post="/logout" hx-swap="none">
+          <button
+            type="submit"
+            style="width:100%;display:flex;align-items:center;gap:8px;padding:12px 16px;border:none;background:none;cursor:pointer;font-size:13.5px;color:var(--ink);text-align:left"
+          >
+            <Icon name="arrowLeft" size={14} />
+            ログアウト
+          </button>
+        </form>
+      </div>
+    </div>
+  </nav>
+)
 
 const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active }) => (
   <aside class="sidebar">
@@ -189,8 +242,14 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
   <html lang="ja">
     <head>
       <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <title>{title} — WorkerMail</title>
+      <meta name="theme-color" content="#1f1a16" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      <meta name="apple-mobile-web-app-title" content="WorkerMail" />
+      <link rel="manifest" href="/manifest.json" />
+      <link rel="apple-touch-icon" href="/icon.svg" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link
@@ -203,14 +262,16 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
     <body>
       <div class="app">
         {user ? <Sidebar user={user} active={active} /> : null}
-        <div class="main">{children as any}</div>
+        <div class="main" id="main-area">{children as any}</div>
       </div>
 
+      {user ? <MobileNav user={user} active={active} /> : null}
       <div id="compose-slot" />
       <div class="toast-container" id="toast-container" aria-live="polite" />
 
       <script dangerouslySetInnerHTML={{ __html: toastScript }} />
-      <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('click',function(e){var m=document.getElementById('user-menu');if(m&&!m.closest('.sidebar-footer').contains(e.target))m.style.display='none'})` }} />
+      <script dangerouslySetInnerHTML={{ __html: `document.addEventListener('click',function(e){var m=document.getElementById('user-menu');if(m&&m.closest('.sidebar-footer')&&!m.closest('.sidebar-footer').contains(e.target))m.style.display='none';var mm=document.getElementById('mobile-user-menu');if(mm&&!e.target.closest('.mobile-nav-item'))mm.style.display='none'})` }} />
+      <script dangerouslySetInnerHTML={{ __html: swScript }} />
     </body>
   </html>
 )
@@ -219,8 +280,14 @@ export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, c
   <html lang="ja">
     <head>
       <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <title>{title} — WorkerMail</title>
+      <meta name="theme-color" content="#1f1a16" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      <meta name="apple-mobile-web-app-title" content="WorkerMail" />
+      <link rel="manifest" href="/manifest.json" />
+      <link rel="apple-touch-icon" href="/icon.svg" />
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link
@@ -233,6 +300,7 @@ export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, c
     <body style="overflow:auto">
       {children as any}
       <div class="toast-container" id="toast-container" aria-live="polite" />
+      <script dangerouslySetInnerHTML={{ __html: swScript }} />
     </body>
   </html>
 )
