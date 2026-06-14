@@ -520,6 +520,7 @@ input, textarea, select { font-family: inherit; }
 .login-screen {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   background: var(--bg);
@@ -957,5 +958,13 @@ table.dt { width: 100%; border-collapse: collapse; }
   .list-header { padding: 12px 14px 10px; }
   .list-title { font-size: 18px; }
   .mail-row { padding: 10px 14px; }
+
+  .login-screen {
+    padding: 20px 16px;
+    min-height: 100dvh;
+  }
+  .login-card {
+    padding: 28px 24px;
+  }
 }
 `
