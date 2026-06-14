@@ -20,14 +20,14 @@ export const LoginPage: FC = () => (
         </div>
 
         <div class="login-greeting">
-          <h1>Mail.</h1>
-          <p>ログインしてください · Sign in</p>
+          <h1>WorkerMail へようこそ</h1>
+          <p>アカウントにサインインしてください</p>
         </div>
 
         <div id="login-error" />
 
         <div class="login-field">
-          <label>メール / Email</label>
+          <label>メールアドレス</label>
           <input
             class="underline-input"
             name="email"
@@ -40,7 +40,7 @@ export const LoginPage: FC = () => (
         </div>
 
         <div class="login-field">
-          <label>パスワード / Password</label>
+          <label>パスワード</label>
           <input
             class="underline-input"
             name="password"
@@ -52,11 +52,11 @@ export const LoginPage: FC = () => (
         </div>
 
         <button class="login-cta" type="submit">
-          Sign in →
+          サインイン
         </button>
       </form>
 
-      <div class="login-footer">workermail.nemonet.work · v0.1</div>
+      <div class="login-footer">WorkerMail · nemonet.work</div>
     </div>
   </LoginLayout>
 )
