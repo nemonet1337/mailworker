@@ -6,8 +6,13 @@ export type AppEnv = {
     MAIL_DOMAIN: string
     SEND_EMAIL: SendEmail
     RATE_LIMITER: RateLimit
-    // wrangler.toml の [[queues.producers]] を有効化した場合のみバインドされる
     MAIL_QUEUE?: Queue
+    // wrangler secret put VAPID_PUBLIC_KEY  (base64url 非圧縮 P-256 公開鍵, 65 bytes)
+    VAPID_PUBLIC_KEY?: string
+    // wrangler secret put VAPID_PRIVATE_KEY_JWK  (P-256 秘密鍵の JWK JSON 文字列)
+    VAPID_PRIVATE_KEY_JWK?: string
+    // mailto: or https: VAPID subject
+    VAPID_SUBJECT?: string
   }
   Variables: {
     user?: SessionUser

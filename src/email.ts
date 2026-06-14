@@ -19,6 +19,17 @@ export default {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`
     ).bind(emailId, messageId, message.to.toLowerCase(), message.from, subject, bodyText, bodyHtml, now).run()
 
+    // Push 通知キューへエンキュー (Queues が有効な場合のみ)
+    if (env.MAIL_QUEUE) {
+      await env.MAIL_QUEUE.send({
+        type: 'new_email',
+        to_address: message.to.toLowerCase(),
+        email_id: emailId,
+        from_: message.from,
+        subject,
+      })
+    }
+
     // 添付ファイルを R2 に保存
     for (const part of parts) {
       const mainType = mimeMainType(part)

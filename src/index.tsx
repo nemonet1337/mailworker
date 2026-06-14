@@ -16,6 +16,7 @@ import { AppEnv, EmailRow } from './types'
 import { verifyPassword, hashPassword } from './lib/password'
 import { createJwt } from './lib/jwt'
 import { checkRateLimit } from './lib/rateLimit'
+import { generateVapidKeys, sendWebPush } from './lib/webpush'
 import emailHandler from './email'
 
 const app = new Hono<AppEnv>()
@@ -161,9 +162,10 @@ app.post('/login', async (c) => {
     return c.html(<LoginError title="ログイン失敗" desc="メールアドレスまたはパスワードが違います" />)
   }
 
-  const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24
+  const SESSION_DURATION = 30 * 24 * 60 * 60
+  const exp = Math.floor(Date.now() / 1000) + SESSION_DURATION
   const token = await createJwt({ sub: user.id, is_admin: user.is_admin, exp }, c.env.JWT_SECRET)
-  setCookie(c, 'session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 60 * 60 * 24 })
+  setCookie(c, 'session', token, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: SESSION_DURATION })
   // sessionStorage にフラッシュを書いてからリダイレクト (トースト表示用)
   return c.html(`<script>sessionStorage.setItem('__flash',JSON.stringify({msg:'ログインしました',type:'success'}));location.replace('/')</script>`)
 })
@@ -172,6 +174,67 @@ app.post('/logout', (c) => {
   deleteCookie(c, 'session', { path: '/' })
   c.header('HX-Redirect', '/login')
   return c.body('')
+})
+
+// ── Push Notification API ─────────────────────────────────────────────────────
+
+app.get('/api/push/vapid-key', (c) => {
+  const key = c.env.VAPID_PUBLIC_KEY
+  if (!key) return c.json({ error: 'Push notifications not configured' }, 503)
+  return c.json({ publicKey: key })
+})
+
+app.post('/api/push/subscribe', async (c) => {
+  const user = c.get('user')!
+  if (!c.env.VAPID_PUBLIC_KEY) return c.json({ error: 'Push notifications not configured' }, 503)
+
+  const body = await c.req.json<{ endpoint: string; keys: { p256dh: string; auth: string } }>()
+  if (!body?.endpoint || !body?.keys?.p256dh || !body?.keys?.auth) {
+    return c.json({ error: 'Invalid subscription' }, 400)
+  }
+
+  const id = crypto.randomUUID()
+  await c.env.DB.prepare(
+    `INSERT INTO push_subscriptions (id, user_id, endpoint, p256dh, auth)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, user_id = excluded.user_id`,
+  ).bind(id, user.id, body.endpoint, body.keys.p256dh, body.keys.auth).run()
+
+  return c.json({ ok: true })
+})
+
+app.post('/api/push/unsubscribe', async (c) => {
+  const user = c.get('user')!
+  const body = await c.req.json<{ endpoint: string }>()
+  if (!body?.endpoint) return c.json({ error: 'Missing endpoint' }, 400)
+
+  await c.env.DB.prepare(
+    'DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?',
+  ).bind(user.id, body.endpoint).run()
+
+  return c.json({ ok: true })
+})
+
+// Admin: generate VAPID keys (one-time setup helper)
+app.get('/admin/vapid/generate', async (c) => {
+  const keys = await generateVapidKeys()
+  return c.html(
+    `<!doctype html><html><body style="font-family:monospace;padding:2rem;line-height:2">
+    <h2>VAPID Keys (one-time generation)</h2>
+    <p>Run the following commands to set them as Worker secrets:</p>
+    <pre style="background:#f0f0f0;padding:1rem;border-radius:4px">
+wrangler secret put VAPID_PUBLIC_KEY
+# paste: ${keys.publicKey}
+
+wrangler secret put VAPID_PRIVATE_KEY_JWK
+# paste: ${keys.privateKeyJwk}
+
+wrangler secret put VAPID_SUBJECT
+# paste: mailto:admin@${c.env.MAIL_DOMAIN}
+    </pre>
+    <p style="color:red">⚠️ This page shows the private key — do not share or reload unnecessarily.</p>
+    </body></html>`
+  )
 })
 
 app.get('/settings', (c) => {
@@ -726,9 +789,40 @@ app.get('/icon-maskable.svg', (c) => {
 
 // ── PWA: サービスワーカー ──────────────────────────────────────────────────
 const SW_JS = `
-const CACHE = 'wm-v1';
+const CACHE = 'wm-v2';
 const FONTS = 'wm-fonts-v1';
 const CDN   = 'wm-cdn-v1';
+
+// Push notification handler
+self.addEventListener('push', function(e) {
+  var data = {};
+  try { data = e.data ? e.data.json() : {}; } catch(_) {}
+  var title = data.title || 'WorkerMail';
+  var options = {
+    body: data.body || '',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
+    tag: data.emailId || 'mail',
+    data: { url: data.url || '/' },
+    requireInteraction: false,
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function(e) {
+  e.notification.close();
+  var url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(cs) {
+      for (var i = 0; i < cs.length; i++) {
+        if (cs[i].url.includes(self.location.origin) && 'focus' in cs[i]) {
+          return cs[i].focus().then(function(c) { return c.navigate(url); });
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
+});
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -806,7 +900,73 @@ function encodeMailHeader(value: string): string {
   return `=?UTF-8?B?${btoa(bin)}?=`
 }
 
+// ── Cloudflare Queue consumer ─────────────────────────────────────────────────
+
+type PushQueueMessage = {
+  type: 'new_email'
+  to_address: string
+  email_id: string
+  from_: string
+  subject: string
+}
+
+async function queueHandler(batch: MessageBatch<PushQueueMessage>, env: AppEnv['Bindings']): Promise<void> {
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY_JWK) return
+
+  let privateKeyJwk: JsonWebKey
+  try {
+    privateKeyJwk = JSON.parse(env.VAPID_PRIVATE_KEY_JWK)
+  } catch {
+    return
+  }
+
+  const vapidSubject = env.VAPID_SUBJECT ?? `mailto:admin@${env.MAIL_DOMAIN}`
+
+  for (const msg of batch.messages) {
+    const { to_address, email_id, from_, subject } = msg.body
+
+    // Look up the user who owns this address
+    const row = await env.DB.prepare(
+      `SELECT u.id FROM users u
+       JOIN mail_addresses ma ON ma.user_id = u.id
+       WHERE ma.address = ?`
+    ).bind(to_address).first<{ id: string }>()
+
+    if (!row) { msg.ack(); continue }
+
+    // Get all push subscriptions for this user
+    const subs = await env.DB.prepare(
+      'SELECT endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = ?'
+    ).bind(row.id).all<{ endpoint: string; p256dh: string; auth: string }>()
+
+    const payload = JSON.stringify({
+      title: `新着メール: ${from_}`,
+      body: subject,
+      emailId: email_id,
+      url: `/mail/${email_id}`,
+    })
+
+    const results = await Promise.allSettled(
+      (subs.results ?? []).map(sub =>
+        sendWebPush(sub.endpoint, sub.p256dh, sub.auth, payload, privateKeyJwk, env.VAPID_PUBLIC_KEY!, vapidSubject)
+      )
+    )
+
+    // Remove expired/invalid subscriptions (410 Gone)
+    const subsArr = subs.results ?? []
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i]
+      if (r.status === 'fulfilled' && r.value.status === 410) {
+        await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(subsArr[i].endpoint).run()
+      }
+    }
+
+    msg.ack()
+  }
+}
+
 export default {
   fetch: app.fetch.bind(app),
   email: emailHandler.email,
+  queue: queueHandler,
 }
