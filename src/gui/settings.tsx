@@ -1,5 +1,6 @@
 import { FC } from 'hono/jsx'
 import { Layout } from './layout'
+import { Icon } from './icons'
 import { SessionUser } from '../types'
 
 export const SettingsPage: FC<{ currentUser: SessionUser }> = ({ currentUser }) => (
@@ -11,6 +12,31 @@ export const SettingsPage: FC<{ currentUser: SessionUser }> = ({ currentUser }) 
             <h1 class="page-title">設定</h1>
           </div>
         </div>
+
+        {currentUser.is_admin === 1 && (
+          <div class="section-card" style="max-width:480px;margin-bottom:24px">
+            <div class="section-card-header">
+              <span class="section-card-title">管理者メニュー</span>
+            </div>
+            <div style="padding:8px">
+              <a href="/admin/dashboard" class="nav-item">
+                <span class="nav-item-icon"><Icon name="shield" size={16} /></span>
+                <span class="nav-item-label">ダッシュボード</span>
+                <Icon name="chevronRight" size={14} stroke="var(--mid)" />
+              </a>
+              <a href="/admin/users" class="nav-item">
+                <span class="nav-item-icon"><Icon name="users" size={16} /></span>
+                <span class="nav-item-label">ユーザー管理</span>
+                <Icon name="chevronRight" size={14} stroke="var(--mid)" />
+              </a>
+              <a href="/admin/addresses" class="nav-item">
+                <span class="nav-item-icon"><Icon name="at" size={16} /></span>
+                <span class="nav-item-label">アドレス管理</span>
+                <Icon name="chevronRight" size={14} stroke="var(--mid)" />
+              </a>
+            </div>
+          </div>
+        )}
 
         <div class="section-card" style="max-width:480px">
           <div class="section-card-header">

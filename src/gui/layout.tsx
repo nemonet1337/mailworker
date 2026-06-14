@@ -186,6 +186,13 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       <span class="nav-item-label">ゴミ箱</span>
     </a>
 
+    <a href="/settings" class={`nav-item${active === 'settings' ? ' active' : ''}`}>
+      <span class="nav-item-icon">
+        <Icon name="settings" size={16} />
+      </span>
+      <span class="nav-item-label">設定</span>
+    </a>
+
     <div
       class="nav-section-label"
       style="cursor:default"
