@@ -13,6 +13,11 @@ compatibility_date = "2026-05-18"
 # Deploy to Cloudflare ボタン: デプロイ画面で自分のドメインに変更できます
 MAIL_DOMAIN = "nemonet.work"
 
+# 管理者による新規ユーザー作成を許可するか (デフォルト: "false" = 禁止)
+# 有効化: wrangler.toml を "true" に変更して再デプロイ、または
+#          Cloudflare ダッシュボード > Workers > 設定 > 変数 で変更
+ALLOW_REGISTRATION = "false"
+
 # D1 データベース
 # Deploy to Cloudflare ボタン: デプロイ画面で既存 DB の選択 / 新規作成が可能
 #   (作成されたリソースの ID で database_id が自動的に書き換えられます)
@@ -31,13 +36,22 @@ migrations_dir = "migrations"
 binding     = "BUCKET"
 bucket_name = "mailworker-bucket"
 
-# Queues (非同期メール処理用プロデューサー) — オプション
-# 使用する場合は下の 2 行のコメントを外してください (Workers Paid プランが必要)
-# Deploy to Cloudflare ボタン: 有効化されていればデプロイ時に自動プロビジョニングされます
+# Queues — PWA プッシュ通知用 (Workers Paid プランが必要)
 # 手動セットアップ: wrangler queues create mailworker-queue
-#[[queues.producers]]
-#binding = "MAIL_QUEUE"
-#queue   = "mailworker-queue"
+[[queues.producers]]
+binding = "MAIL_QUEUE"
+queue   = "mailworker-queue"
+
+[[queues.consumers]]
+queue             = "mailworker-queue"
+max_batch_size    = 10
+max_batch_timeout = 5
+
+# VAPID キー (プッシュ通知用) — wrangler secret で設定してください:
+#   wrangler secret put VAPID_PUBLIC_KEY
+#   wrangler secret put VAPID_PRIVATE_KEY_JWK
+#   wrangler secret put VAPID_SUBJECT   (例: mailto:admin@yourdomain.com)
+# キーの生成: デプロイ後に /admin/vapid/generate にアクセス
 
 # メール送信 (Cloudflare Email Workers)
 # Cloudflare ダッシュボードで Email Routing を有効にしてください
