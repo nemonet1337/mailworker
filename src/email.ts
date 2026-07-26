@@ -30,6 +30,17 @@ export default {
       subject, bodyText, bodyHtml, now,
     ).run()
 
+    // Push 通知キューへエンキュー (Queues が有効な場合のみ)
+    if (env.MAIL_QUEUE) {
+      await env.MAIL_QUEUE.send({
+        type: 'new_email',
+        to_address: message.to.toLowerCase(),
+        email_id: emailId,
+        from_: fromHeader || message.from,
+        subject,
+      })
+    }
+
     const stmts: D1PreparedStatement[] = []
     const puts: Promise<unknown>[] = []
 

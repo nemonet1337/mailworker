@@ -6,6 +6,15 @@ export type AppEnv = {
     MAIL_DOMAIN: string
     SEND_EMAIL: SendEmail
     RATE_LIMITER: RateLimit
+    MAIL_QUEUE?: Queue
+    // wrangler secret put VAPID_PUBLIC_KEY  (base64url 非圧縮 P-256 公開鍵, 65 bytes)
+    VAPID_PUBLIC_KEY?: string
+    // wrangler secret put VAPID_PRIVATE_KEY_JWK  (P-256 秘密鍵の JWK JSON 文字列)
+    VAPID_PRIVATE_KEY_JWK?: string
+    // mailto: or https: VAPID subject
+    VAPID_SUBJECT?: string
+    // "true" に設定すると管理者がユーザーを新規作成できる (デフォルト: false)
+    ALLOW_REGISTRATION?: string
   }
   Variables: {
     user?: SessionUser

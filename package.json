@@ -28,6 +28,9 @@
       "BUCKET": {
         "description": "添付ファイルを保存する R2 バケット。既存のバケットを選択するか、無い場合は新規作成してください。"
       },
+      "MAIL_QUEUE": {
+        "description": "(オプション) 非同期メール処理用の Queue。wrangler.toml の [[queues.producers]] を有効化した場合のみ使用されます。Workers Paid プランが必要です。"
+      },
       "SEND_EMAIL": {
         "description": "メール送信用バインディング。デプロイ後、Cloudflare ダッシュボードで Email Routing を有効化してください。"
       },
@@ -43,19 +46,19 @@
     }
   },
   "dependencies": {
-    "hono": "^4.12.23"
+    "hono": "^4.12.25"
   },
   "overrides": {
     "esbuild": ">=0.28.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260607.1",
+    "@cloudflare/workers-types": "^4.20260613.1",
     "@tailwindcss/cli": "^4.3.3",
     "daisyui": "^5.7.4",
     "heroicons": "^2.2.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.1",
     "typescript": "^6.0.3",
-    "wrangler": "^4.98.0"
+    "wrangler": "^4.100.0"
   }
 }
