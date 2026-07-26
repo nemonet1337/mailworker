@@ -67,7 +67,7 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
                     <td>
                       {u.is_admin === 1 ? (
                         <span class="tag coral-soft">
-                          <Icon name="crown" size={10} stroke="var(--coral-deep)" strokeWidth={2.2} />
+                          <Icon name="crown" size={10} stroke="var(--accent-deep)" strokeWidth={2.2} />
                           admin
                         </span>
                       ) : (

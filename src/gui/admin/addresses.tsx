@@ -65,7 +65,7 @@ export const AddressesPage: FC<{
                     onclick={`toggleAddr('${a.id}')`}
                     style="cursor:pointer"
                   >
-                    <div class="address-icon" style="background:var(--coral);color:var(--white);border-color:var(--ink)">
+                    <div class="address-icon" style="background:var(--accent);color:var(--surface);border-color:var(--ink)">
                       <Icon name="at" size={18} />
                     </div>
                     <div class="address-info">

@@ -3,25 +3,29 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev":                  "wrangler dev --local",
-    "build":                "tsc --noEmit",
-    "deploy":               "npm run db:migrate:remote && wrangler deploy",
-    "db:migrate:local":     "wrangler d1 migrations apply DB --local",
-    "db:migrate:remote":    "wrangler d1 migrations apply DB --remote"
+    "dev": "wrangler dev --local",
+    "build": "tsc --noEmit",
+    "test": "node --experimental-strip-types --import tsx src/email.test.ts",
+    "deploy": "npm run db:migrate:remote && wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote"
   },
   "cloudflare": {
     "label": "mailworker",
-    "products": ["Workers", "D1", "R2"],
-    "categories": ["starter"],
+    "products": [
+      "Workers",
+      "D1",
+      "R2"
+    ],
+    "categories": [
+      "starter"
+    ],
     "bindings": {
       "DB": {
         "description": "メール・ユーザーデータを保存する D1 データベース。既存のデータベースを選択するか、無い場合は新規作成してください。"
       },
       "BUCKET": {
         "description": "添付ファイルを保存する R2 バケット。既存のバケットを選択するか、無い場合は新規作成してください。"
-      },
-      "MAIL_QUEUE": {
-        "description": "(オプション) 非同期メール処理用の Queue。wrangler.toml の [[queues.producers]] を有効化した場合のみ使用されます。Workers Paid プランが必要です。"
       },
       "SEND_EMAIL": {
         "description": "メール送信用バインディング。デプロイ後、Cloudflare ダッシュボードで Email Routing を有効化してください。"
@@ -45,6 +49,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260607.1",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
     "wrangler": "^4.98.0"
   }

@@ -75,8 +75,6 @@ export const MailRows: FC<{ emails: EmailRow[]; showTo?: boolean }> = ({ emails,
   </>
 )
 
-export const InboxRows = MailRows
-
 function FolderPage({
   currentUser,
   emails,
@@ -92,7 +90,7 @@ function FolderPage({
   currentUser: SessionUser
   emails: EmailRow[]
   title: string
-  active: 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'starred'
+  active: 'inbox' | 'sent' | 'scheduled' | 'spam' | 'trash' | 'starred'
   showTo?: boolean
   page: number
   hasNext: boolean
@@ -141,13 +139,13 @@ function FolderPage({
         {(page > 1 || hasNext) && (
           <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 18px;border-top:1px solid var(--line);font-size:12px;flex-shrink:0">
             {page > 1 ? (
-              <a href={qs(page - 1)} style="color:var(--coral);text-decoration:none;font-weight:500">← 前</a>
+              <a href={qs(page - 1)} style="color:var(--accent);text-decoration:none;font-weight:500">← 前</a>
             ) : (
               <span style="color:var(--mid)">← 前</span>
             )}
             <span style="color:var(--sub)">{page}ページ</span>
             {hasNext ? (
-              <a href={qs(page + 1)} style="color:var(--coral);text-decoration:none;font-weight:500">次 →</a>
+              <a href={qs(page + 1)} style="color:var(--accent);text-decoration:none;font-weight:500">次 →</a>
             ) : (
               <span style="color:var(--mid)">次 →</span>
             )}
@@ -183,6 +181,9 @@ export const InboxPage: FC<{
 
   const title = selectedAddr ? selectedAddr.split('@')[0] : '受信箱'
   const unreadCount = emails.filter((m) => m.is_read === 0).length
+  const readAllUrl = selectedAddr
+    ? `/mail/read-all?addr=${encodeURIComponent(selectedAddr)}`
+    : '/mail/read-all'
 
   return (
     <Layout title="受信箱" user={currentUser} active="inbox">
@@ -193,6 +194,19 @@ export const InboxPage: FC<{
             {unreadCount > 0 && (
               <span class="list-count">{unreadCount}未読</span>
             )}
+            <button
+              class="tool-btn"
+              style="margin-left:auto;font-size:12px"
+              title="すべて既読"
+              hx-post={readAllUrl}
+              hx-swap="none"
+              hx-confirm="表示中のメールをすべて既読にしますか？"
+              {...({
+                'hx-on::after-request': "if(event.detail.successful){document.querySelectorAll('.mail-row.unread').forEach(function(r){r.classList.remove('unread')});document.querySelectorAll('.unread-dot').forEach(function(d){d.remove()});document.querySelectorAll('.list-count').forEach(function(c){c.remove()})}",
+              } as object)}
+            >
+              すべて既読
+            </button>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
             <input
@@ -219,13 +233,13 @@ export const InboxPage: FC<{
         {(page > 1 || hasNext) && (
           <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 18px;border-top:1px solid var(--line);font-size:12px;flex-shrink:0">
             {page > 1 ? (
-              <a href={qs(page - 1)} style="color:var(--coral);text-decoration:none;font-weight:500">← 前</a>
+              <a href={qs(page - 1)} style="color:var(--accent);text-decoration:none;font-weight:500">← 前</a>
             ) : (
               <span style="color:var(--mid)">← 前</span>
             )}
             <span style="color:var(--sub)">{page}ページ</span>
             {hasNext ? (
-              <a href={qs(page + 1)} style="color:var(--coral);text-decoration:none;font-weight:500">次 →</a>
+              <a href={qs(page + 1)} style="color:var(--accent);text-decoration:none;font-weight:500">次 →</a>
             ) : (
               <span style="color:var(--mid)">次 →</span>
             )}
@@ -302,28 +316,24 @@ export const TrashPage: FC<{
   />
 )
 
-export const DraftsPage: FC<{ currentUser: SessionUser }> = ({ currentUser }) => (
-  <Layout title="下書き" user={currentUser} active="drafts">
-    <div class="list-pane">
-      <div class="list-header">
-        <div class="list-title-row">
-          <div class="list-title">下書き</div>
-        </div>
-      </div>
-      <div class="list-scroll">
-        <div class="empty-pane" style="padding-top:60px">
-          <Icon name="drafts" size={36} stroke="var(--mid)" />
-          <div class="big" style="margin-top:12px">下書きはありません</div>
-        </div>
-      </div>
-    </div>
-    <div class="read-pane" id="read-pane">
-      <div class="empty-pane">
-        <Icon name="mail" size={40} stroke="var(--mid)" />
-        <div class="big" style="margin-top:12px">メールを選択</div>
-      </div>
-    </div>
-  </Layout>
+export const ScheduledPage: FC<{
+  currentUser: SessionUser
+  emails: EmailRow[]
+  page: number
+  hasNext: boolean
+}> = ({ currentUser, emails, page, hasNext }) => (
+  <FolderPage
+    currentUser={currentUser}
+    emails={emails}
+    title="予約済み"
+    active="scheduled"
+    showTo={true}
+    page={page}
+    hasNext={hasNext}
+    basePath="/scheduled"
+    emptyIcon="clock"
+    emptyText="予約送信はありません"
+  />
 )
 
 export const SpamPage: FC<{
@@ -367,30 +377,18 @@ export const MailDetailPartial: FC<{
         <Icon name="arrowLeft" size={14} />
         戻る
       </button>
-      {folder !== 'sent' && (
-        <>
-          <button
-            class="tool-btn"
-            hx-get={`/compose/drawer?replyTo=${id}`}
-            hx-target="#compose-slot"
-            hx-swap="innerHTML"
-          >
-            <Icon name="reply" size={14} />
-            返信
-          </button>
-          <button
-            class="tool-btn"
-            hx-get={`/compose/drawer?forwardOf=${id}`}
-            hx-target="#compose-slot"
-            hx-swap="innerHTML"
-          >
-            <Icon name="forward" size={14} />
-            転送
-          </button>
-        </>
+      {folder !== 'sent' && folder !== 'scheduled' && (
+        <button
+          class="tool-btn"
+          hx-get={`/compose/drawer?replyTo=${id}`}
+          hx-target="#compose-slot"
+          hx-swap="innerHTML"
+        >
+          <Icon name="reply" size={14} />
+          返信
+        </button>
       )}
       <div style="flex:1" />
-      {/* スター（お気に入り）ボタン */}
       {is_starred === 1 ? (
         <button
           class="tool-btn icon-only"
@@ -413,7 +411,7 @@ export const MailDetailPartial: FC<{
           <Icon name="star" size={15} />
         </button>
       )}
-      {folder !== 'sent' && (
+      {folder !== 'sent' && folder !== 'scheduled' && (
         <button
           class="tool-btn icon-only"
           title="未読に戻す"
@@ -480,7 +478,7 @@ export const MailDetailPartial: FC<{
             <b>{senderName(from_)}</b>
             <span class="addr">{from_.match(/<(.+)>/)?.[1] ?? from_}</span>
           </div>
-          {to_address && folder === 'sent' && (
+          {to_address && (folder === 'sent' || folder === 'scheduled') && (
             <div style="font-size:12px;color:var(--sub);margin-top:2px">To: {to_address}</div>
           )}
         </div>
@@ -524,8 +522,7 @@ export const MailDetailPartial: FC<{
               id="body-html"
               srcdoc={body_html}
               sandbox="allow-popups allow-popups-to-escape-sandbox"
-              style="width:100%;min-height:400px;border:none;display:block"
-              onload="this.style.height=this.contentDocument.body.scrollHeight+32+'px'"
+              style="width:100%;min-height:400px;max-height:70vh;border:none;display:block;overflow:auto"
             />
             <pre id="body-text" style="white-space:pre-wrap;font-size:13px;line-height:1.7;display:none">{body_text}</pre>
           </>

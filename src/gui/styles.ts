@@ -83,7 +83,7 @@ button { font-family: inherit; cursor: pointer; }
 input, textarea, select { font-family: inherit; }
 
 /* ── App shell ─────────────────────────────── */
-.app { display: flex; height: 100vh; background: var(--bg); }
+.app { display: flex; height: 100dvh; background: var(--bg); }
 
 /* ── Sidebar ───────────────────────────────── */
 .sidebar {
@@ -435,7 +435,16 @@ input, textarea, select { font-family: inherit; }
 .compose-header-actions .icon-btn { color: rgba(255,255,255,.65); width: 24px; height: 24px; border-radius: 50%; }
 .compose-header-actions .icon-btn:hover { background: rgba(255,255,255,.15); color: #fff; }
 
-.compose-body { flex: 1; overflow-y: auto; padding: 0 16px; display: flex; flex-direction: column; }
+#compose-drawer-form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.compose-body { flex: 1; overflow-y: auto; padding: 0 16px; display: flex; flex-direction: column; min-height: 0; }
+.compose-schedule {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--sub); margin-left: 4px;
+}
+.compose-schedule input {
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  padding: 4px 6px; font-size: 12px; color: var(--ink); background: var(--surface);
+}
 .compose-row {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 0;

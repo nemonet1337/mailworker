@@ -31,18 +31,14 @@ migrations_dir = "migrations"
 binding     = "BUCKET"
 bucket_name = "mailworker-bucket"
 
-# Queues (非同期メール処理用プロデューサー) — オプション
-# 使用する場合は下の 2 行のコメントを外してください (Workers Paid プランが必要)
-# Deploy to Cloudflare ボタン: 有効化されていればデプロイ時に自動プロビジョニングされます
-# 手動セットアップ: wrangler queues create mailworker-queue
-#[[queues.producers]]
-#binding = "MAIL_QUEUE"
-#queue   = "mailworker-queue"
-
-# メール送信 (Cloudflare Email Workers)
-# Cloudflare ダッシュボードで Email Routing を有効にしてください
+# メール送信 (Cloudflare Email Workers / Email Sending)
+# Cloudflare ダッシュボードで Email Sending へドメインをオンボードしてください
 [[send_email]]
 name = "SEND_EMAIL"
+
+# 予約送信: 毎分 due を処理 (デプロイ反映に最大 15 分かかる場合あり)
+[triggers]
+crons = ["* * * * *"]
 
 # レートリミッター (ブルートフォース対策)
 # namespace_id はこの Worker 内で一意な任意の正の整数 (ダッシュボードでの事前作成は不要)

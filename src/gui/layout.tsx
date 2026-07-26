@@ -1,9 +1,18 @@
 import { FC } from 'hono/jsx'
 import { SessionUser } from '../types'
-import { CSS } from './styles'
 import { Icon, LogoMark } from './icons'
 
-type ActivePage = 'inbox' | 'sent' | 'drafts' | 'spam' | 'trash' | 'starred' | 'users' | 'addresses' | 'dashboard' | 'settings'
+type ActivePage =
+  | 'inbox'
+  | 'sent'
+  | 'scheduled'
+  | 'spam'
+  | 'trash'
+  | 'starred'
+  | 'users'
+  | 'addresses'
+  | 'dashboard'
+  | 'settings'
 
 type LayoutProps = {
   title: string
@@ -18,6 +27,18 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(function () {});
   });
 }
+document.body.addEventListener('clearCaches', function () {
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage('CLEAR_CACHES');
+  }
+  if (window.caches) {
+    caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+  }
+});
+document.body.addEventListener('refreshUnread', function () {
+  var el = document.querySelector('.nav-item-count[hx-get="/sidebar/unread"]');
+  if (el && window.htmx) htmx.trigger(el, 'load');
+});
 `
 
 const themeInitScript = `(function(){var t=localStorage.getItem('wm-theme')||'system';var a=localStorage.getItem('wm-accent')||'blue';var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(dark)document.documentElement.setAttribute('data-theme','dark');if(a&&a!=='blue')document.documentElement.setAttribute('data-accent',a);})();`
@@ -58,6 +79,11 @@ const toastScript = `
         if (data && data.msg) showToast(data.msg, data.type || 'success');
       }
     } catch (_) {}
+    // PWA shortcut ?compose=1
+    if (location.search.indexOf('compose=1') !== -1) {
+      var slot = document.getElementById('compose-slot');
+      if (slot && window.htmx) htmx.ajax('GET', '/compose/drawer', { target: '#compose-slot', swap: 'innerHTML' });
+    }
   });
 
   window.__showToast = showToast;
@@ -72,6 +98,29 @@ function initials(name: string): string {
     .toUpperCase()
     .slice(0, 2) || '?'
 }
+
+const Head: FC<{ title: string }> = ({ title }) => (
+  <head>
+    <meta charSet="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title} — WorkerMail</title>
+    <meta name="theme-color" content="#1f1a16" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WorkerMail" />
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/htmx.min.js" />
+  </head>
+)
 
 const MobileNav: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active }) => (
   <nav class="mobile-nav">
@@ -101,7 +150,7 @@ const MobileNav: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, activ
       <span>アカウント</span>
       <div
         id="mobile-user-menu"
-        style="display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;z-index:100;white-space:nowrap;min-width:160px"
+        style="display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;z-index:100;white-space:nowrap;min-width:160px"
         onclick="event.stopPropagation()"
       >
         <form hx-post="/logout" hx-swap="none">
@@ -147,7 +196,7 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       <span
         class="nav-item-count"
         hx-get="/sidebar/unread"
-        hx-trigger="load, every 30s"
+        hx-trigger="load, every 90s"
         hx-target="this"
         hx-swap="innerHTML"
       />
@@ -167,11 +216,11 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       <span class="nav-item-label">送信済み</span>
     </a>
 
-    <a href="/drafts" class={`nav-item${active === 'drafts' ? ' active' : ''}`}>
+    <a href="/scheduled" class={`nav-item${active === 'scheduled' ? ' active' : ''}`}>
       <span class="nav-item-icon">
-        <Icon name="drafts" size={16} />
+        <Icon name="clock" size={16} />
       </span>
-      <span class="nav-item-label">下書き</span>
+      <span class="nav-item-label">予約済み</span>
     </a>
 
     <a href="/spam" class={`nav-item${active === 'spam' ? ' active' : ''}`}>
@@ -244,23 +293,23 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
         <div class="user-name" style="display:flex;align-items:center;gap:4px">
           {user.display_name}
           {user.is_admin === 1 && (
-            <Icon name="crown" size={11} stroke="var(--coral)" strokeWidth={2.2} />
+            <Icon name="crown" size={11} stroke="var(--accent)" strokeWidth={2.2} />
           )}
         </div>
         <div class="user-email">{user.email}</div>
       </div>
       <div
         id="user-menu"
-        style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:100"
+        style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:100"
         onclick="event.stopPropagation()"
       >
         <form hx-post="/logout" hx-swap="none">
           <button
             type="submit"
-            style="width:100%;display:flex;align-items:center;gap:8px;padding:12px 16px;border:none;background:none;cursor:pointer;font-size:13.5px;color:var(--text);text-align:left"
-            onmouseover="this.style.background='var(--hover)'" onmouseout="this.style.background='none'"
+            style="width:100%;display:flex;align-items:center;gap:8px;padding:12px 16px;border:none;background:none;cursor:pointer;font-size:13.5px;color:var(--ink);text-align:left"
+            onmouseover="this.style.background='var(--line-soft)'" onmouseout="this.style.background='none'"
           >
-            <Icon name="log-out" size={14} />
+            <Icon name="arrowLeft" size={14} />
             ログアウト
           </button>
         </form>
@@ -284,26 +333,7 @@ export const SidebarAddressItems: FC<{ addresses: string[] }> = ({ addresses }) 
 
 export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
   <html lang="ja">
-    <head>
-      <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      <title>{title} — WorkerMail</title>
-      <meta name="theme-color" content="#1f1a16" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <meta name="apple-mobile-web-app-title" content="WorkerMail" />
-      <link rel="manifest" href="/manifest.json" />
-      <link rel="apple-touch-icon" href="/icon.svg" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-      />
-      <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <script src="https://unpkg.com/htmx.org@1.9.12" />
-    </head>
+    <Head title={title} />
     <body>
       <div class="app">
         {user ? <Sidebar user={user} active={active} /> : null}
@@ -323,26 +353,7 @@ export const Layout: FC<LayoutProps> = ({ title, active, user, children }) => (
 
 export const LoginLayout: FC<{ title: string; children: unknown }> = ({ title, children }) => (
   <html lang="ja">
-    <head>
-      <meta charSet="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      <title>{title} — WorkerMail</title>
-      <meta name="theme-color" content="#1f1a16" />
-      <meta name="apple-mobile-web-app-capable" content="yes" />
-      <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-      <meta name="apple-mobile-web-app-title" content="WorkerMail" />
-      <link rel="manifest" href="/manifest.json" />
-      <link rel="apple-touch-icon" href="/icon.svg" />
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-      />
-      <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <script src="https://unpkg.com/htmx.org@1.9.12" />
-    </head>
+    <Head title={title} />
     <body style="overflow:auto">
       {children as any}
       <div class="toast-container" id="toast-container" aria-live="polite" />

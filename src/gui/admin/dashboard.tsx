@@ -23,7 +23,7 @@ const Spark: FC<{ data: DailyCount[]; width?: number; height?: number }> = ({
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style="overflow:visible">
       <polygon points={poly} fill="oklch(0.94 0.035 30)" stroke="none" />
-      <polyline points={pts.join(' ')} fill="none" stroke="var(--coral)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline points={pts.join(' ')} fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   )
 }
@@ -137,7 +137,7 @@ export const DashboardPage: FC<{
                     <tr key={e.id}>
                       <td style="width:24px;padding:14px 8px 14px 16px">
                         {e.is_read === 0 && (
-                          <div style="width:6px;height:6px;border-radius:3px;background:var(--coral)" />
+                          <div style="width:6px;height:6px;border-radius:3px;background:var(--accent)" />
                         )}
                       </td>
                       <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">

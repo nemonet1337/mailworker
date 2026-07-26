@@ -6,12 +6,9 @@ export type AppEnv = {
     MAIL_DOMAIN: string
     SEND_EMAIL: SendEmail
     RATE_LIMITER: RateLimit
-    // wrangler.toml の [[queues.producers]] を有効化した場合のみバインドされる
-    MAIL_QUEUE?: Queue
   }
   Variables: {
     user?: SessionUser
-    isAuthed?: boolean
   }
 }
 
@@ -33,14 +30,20 @@ export type EmailRow = {
   is_trashed?: number
   folder?: string
   body_text?: string
+  scheduled_at?: string | null
+  send_attempts?: number
 }
 
-export type AttachmentRow = {
+export type MailDetail = {
   id: string
-  email_id: string
-  filename: string
-  content_type: string
-  size: number
-  r2_key: string
-  created_at: string
+  from_: string
+  to_address: string
+  subject: string
+  received_at: string
+  body_text: string
+  body_html: string | null
+  is_starred: number
+  is_trashed: number
+  folder: string
+  scheduled_at?: string | null
 }
