@@ -29,7 +29,7 @@ export const LoginPage: FC = () => (
         <div class="login-field">
           <label>メールアドレス</label>
           <input
-            class="underline-input"
+            class="input w-full"
             name="email"
             type="email"
             autocomplete="email"
@@ -42,7 +42,7 @@ export const LoginPage: FC = () => (
         <div class="login-field">
           <label>パスワード</label>
           <input
-            class="underline-input"
+            class="input w-full"
             name="password"
             type="password"
             autocomplete="current-password"
@@ -51,7 +51,7 @@ export const LoginPage: FC = () => (
           />
         </div>
 
-        <button class="login-cta" type="submit">
+        <button class="btn btn-primary w-full mt-2" type="submit">
           サインイン
         </button>
       </form>
@@ -62,11 +62,11 @@ export const LoginPage: FC = () => (
 )
 
 export const LoginError: FC<{ title: string; desc?: string }> = ({ title, desc }) => (
-  <div class="login-error">
-    <span class="login-error-icon">!</span>
-    <div class="login-error-body">
-      <b>{title}</b>
-      {desc && <div>{desc}</div>}
+  <div class="alert alert-error mb-4" role="alert">
+    <span class="font-bold">!</span>
+    <div>
+      <div class="font-semibold">{title}</div>
+      {desc && <div class="text-xs opacity-80">{desc}</div>}
     </div>
   </div>
 )

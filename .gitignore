@@ -1,5 +1,7 @@
 .wrangler/
+.wrangler-dry/
 dist/
 node_modules/
 *.local
 .dev.vars
+src/gui/tailwind.css

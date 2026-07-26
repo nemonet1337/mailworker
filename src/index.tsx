@@ -17,7 +17,7 @@ import { verifyPassword, hashPassword } from './lib/password'
 import { createJwt } from './lib/jwt'
 import { checkRateLimit } from './lib/rateLimit'
 import { extractEmailAddr, parsePage, PAGE_SIZE } from './lib/mail'
-import { CSS } from './gui/styles'
+import CSS from './gui/tailwind.css'
 import emailHandler from './email'
 import {
   ICON_192,

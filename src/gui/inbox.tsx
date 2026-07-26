@@ -40,7 +40,7 @@ export const MailRows: FC<{ emails: EmailRow[]; showTo?: boolean }> = ({ emails,
   <>
     {emails.length === 0 ? (
       <div class="empty-pane" style="padding-top:60px">
-        <Icon name="inbox" size={36} stroke="var(--mid)" />
+        <Icon name="inbox" size={36} stroke="currentColor" />
         <div class="big" style="margin-top:12px">メールなし</div>
         <div>受信メールがここに表示されます</div>
       </div>
@@ -128,7 +128,7 @@ function FolderPage({
         <div class="list-scroll" id="mail-list">
           {emails.length === 0 ? (
             <div class="empty-pane" style="padding-top:60px">
-              <Icon name={emptyIcon as any ?? 'inbox'} size={36} stroke="var(--mid)" />
+              <Icon name={emptyIcon as any ?? 'inbox'} size={36} stroke="currentColor" />
               <div class="big" style="margin-top:12px">{emptyText ?? 'メールなし'}</div>
             </div>
           ) : (
@@ -137,17 +137,17 @@ function FolderPage({
         </div>
 
         {(page > 1 || hasNext) && (
-          <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 18px;border-top:1px solid var(--line);font-size:12px;flex-shrink:0">
+          <div class="flex items-center justify-center gap-3 px-[18px] py-2.5 border-t border-base-300 text-xs shrink-0">
             {page > 1 ? (
-              <a href={qs(page - 1)} style="color:var(--accent);text-decoration:none;font-weight:500">← 前</a>
+              <a href={qs(page - 1)} class="text-primary no-underline font-medium">← 前</a>
             ) : (
-              <span style="color:var(--mid)">← 前</span>
+              <span class="text-base-content/40">← 前</span>
             )}
-            <span style="color:var(--sub)">{page}ページ</span>
+            <span class="text-base-content/50">{page}ページ</span>
             {hasNext ? (
-              <a href={qs(page + 1)} style="color:var(--accent);text-decoration:none;font-weight:500">次 →</a>
+              <a href={qs(page + 1)} class="text-primary no-underline font-medium">次 →</a>
             ) : (
-              <span style="color:var(--mid)">次 →</span>
+              <span class="text-base-content/40">次 →</span>
             )}
           </div>
         )}
@@ -155,7 +155,7 @@ function FolderPage({
 
       <div class="read-pane" id="read-pane">
         <div class="empty-pane">
-          <Icon name="mail" size={40} stroke="var(--mid)" />
+          <Icon name="mail" size={40} stroke="currentColor" />
           <div class="big" style="margin-top:12px">メールを選択</div>
           <div>リストからメールをクリックして表示</div>
         </div>
@@ -231,17 +231,17 @@ export const InboxPage: FC<{
         </div>
 
         {(page > 1 || hasNext) && (
-          <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:10px 18px;border-top:1px solid var(--line);font-size:12px;flex-shrink:0">
+          <div class="flex items-center justify-center gap-3 px-[18px] py-2.5 border-t border-base-300 text-xs shrink-0">
             {page > 1 ? (
-              <a href={qs(page - 1)} style="color:var(--accent);text-decoration:none;font-weight:500">← 前</a>
+              <a href={qs(page - 1)} class="text-primary no-underline font-medium">← 前</a>
             ) : (
-              <span style="color:var(--mid)">← 前</span>
+              <span class="text-base-content/40">← 前</span>
             )}
-            <span style="color:var(--sub)">{page}ページ</span>
+            <span class="text-base-content/50">{page}ページ</span>
             {hasNext ? (
-              <a href={qs(page + 1)} style="color:var(--accent);text-decoration:none;font-weight:500">次 →</a>
+              <a href={qs(page + 1)} class="text-primary no-underline font-medium">次 →</a>
             ) : (
-              <span style="color:var(--mid)">次 →</span>
+              <span class="text-base-content/40">次 →</span>
             )}
           </div>
         )}
@@ -249,7 +249,7 @@ export const InboxPage: FC<{
 
       <div class="read-pane" id="read-pane">
         <div class="empty-pane">
-          <Icon name="mail" size={40} stroke="var(--mid)" />
+          <Icon name="mail" size={40} stroke="currentColor" />
           <div class="big" style="margin-top:12px">メールを選択</div>
           <div>リストからメールをクリックして表示</div>
         </div>
@@ -472,14 +472,14 @@ export const MailDetailPartial: FC<{
       <div class="read-subject">{subject || '(件名なし)'}</div>
 
       <div class="read-header">
-        <div class="avatar">{senderInitials(from_)}</div>
+        <div class="avatar-circle">{senderInitials(from_)}</div>
         <div style="flex:1;min-width:0">
           <div class="read-from">
             <b>{senderName(from_)}</b>
             <span class="addr">{from_.match(/<(.+)>/)?.[1] ?? from_}</span>
           </div>
           {to_address && (folder === 'sent' || folder === 'scheduled') && (
-            <div style="font-size:12px;color:var(--sub);margin-top:2px">To: {to_address}</div>
+            <div class="text-xs text-base-content/50 mt-0.5">To: {to_address}</div>
           )}
         </div>
         <div class="read-time">{received_at.slice(0, 16).replace('T', ' ')}</div>

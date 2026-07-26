@@ -64,3 +64,12 @@ invocation_logs = true
 enabled = true
 persist = true
 head_sampling_rate = 1
+
+[build]
+command = "npm run css"
+watch_dir = ["src", "styles"]
+
+[[rules]]
+type = "Text"
+globs = ["**/*.css"]
+fallthrough = true

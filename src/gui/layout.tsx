@@ -43,22 +43,28 @@ document.body.addEventListener('refreshUnread', function () {
 
 const themeInitScript = `(function(){var t=localStorage.getItem('wm-theme')||'system';var a=localStorage.getItem('wm-accent')||'blue';var dark=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(dark)document.documentElement.setAttribute('data-theme','dark');if(a&&a!=='blue')document.documentElement.setAttribute('data-accent',a);})();`
 
+// Literal class names so Tailwind can detect them (no runtime string concat for type)
 const toastScript = `
 (function () {
+  function alertClass(type) {
+    if (type === 'error') return 'wm-toast alert alert-error';
+    if (type === 'info') return 'wm-toast alert alert-info';
+    if (type === 'warning') return 'wm-toast alert alert-warning';
+    return 'wm-toast alert alert-success';
+  }
   function showToast(message, type, desc) {
     type = type || 'success';
     var container = document.getElementById('toast-container');
     if (!container) return;
     var toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    var iconHtml = type === 'success' ? '✓' : type === 'error' ? '!' : '↻';
+    toast.className = alertClass(type);
+    toast.setAttribute('role', 'alert');
     toast.innerHTML =
-      '<div class="toast-icon">' + iconHtml + '</div>' +
-      '<div class="toast-content">' +
-        '<div class="toast-title">' + message + '</div>' +
-        (desc ? '<div class="toast-desc">' + desc + '</div>' : '') +
+      '<div>' +
+        '<div class="font-semibold text-sm">' + message + '</div>' +
+        (desc ? '<div class="text-xs opacity-80">' + desc + '</div>' : '') +
       '</div>' +
-      '<button class="toast-close" onclick="this.closest(\\'.toast\\').remove()">\xd7</button>';
+      '<button type="button" class="btn btn-ghost btn-xs btn-circle" onclick="this.closest(\\'.wm-toast\\').remove()">\xd7</button>';
     container.appendChild(toast);
     setTimeout(function () {
       toast.classList.add('exit');
@@ -79,7 +85,6 @@ const toastScript = `
         if (data && data.msg) showToast(data.msg, data.type || 'success');
       }
     } catch (_) {}
-    // PWA shortcut ?compose=1
     if (location.search.indexOf('compose=1') !== -1) {
       var slot = document.getElementById('compose-slot');
       if (slot && window.htmx) htmx.ajax('GET', '/compose/drawer', { target: '#compose-slot', swap: 'innerHTML' });
@@ -146,17 +151,18 @@ const MobileNav: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, activ
       style="position:relative"
       onclick="var m=document.getElementById('mobile-user-menu');m.style.display=m.style.display==='block'?'none':'block'"
     >
-      <div class="avatar" style="width:24px;height:24px;font-size:9px;border-radius:12px;flex-shrink:0">{initials(user.display_name)}</div>
+      <div class="avatar-circle" style="width:24px;height:24px;font-size:9px">{initials(user.display_name)}</div>
       <span>アカウント</span>
       <div
         id="mobile-user-menu"
-        style="display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);overflow:hidden;z-index:100;white-space:nowrap;min-width:160px"
+        class="hidden absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-base-100 border border-base-300 rounded-xl shadow-xl overflow-hidden z-[100] whitespace-nowrap min-w-40"
+        style="display:none"
         onclick="event.stopPropagation()"
       >
         <form hx-post="/logout" hx-swap="none">
           <button
             type="submit"
-            style="width:100%;display:flex;align-items:center;gap:8px;padding:12px 16px;border:none;background:none;cursor:pointer;font-size:13.5px;color:var(--ink);text-align:left"
+            class="w-full flex items-center gap-2 px-4 py-3 border-0 bg-transparent cursor-pointer text-[13.5px] text-base-content text-left hover:bg-base-200"
           >
             <Icon name="arrowLeft" size={14} />
             ログアウト
@@ -288,26 +294,26 @@ const Sidebar: FC<{ user: SessionUser; active?: ActivePage }> = ({ user, active 
       style="cursor:pointer;position:relative"
       onclick="var m=document.getElementById('user-menu');m.style.display=m.style.display==='block'?'none':'block'"
     >
-      <div class="avatar">{initials(user.display_name)}</div>
+      <div class="avatar-circle">{initials(user.display_name)}</div>
       <div class="user-info">
         <div class="user-name" style="display:flex;align-items:center;gap:4px">
           {user.display_name}
           {user.is_admin === 1 && (
-            <Icon name="crown" size={11} stroke="var(--accent)" strokeWidth={2.2} />
+            <Icon name="crown" size={11} stroke="currentColor" strokeWidth={2.2} />
           )}
         </div>
         <div class="user-email">{user.email}</div>
       </div>
       <div
         id="user-menu"
-        style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);overflow:hidden;z-index:100"
+        class="bg-base-200 border border-base-300 rounded-xl shadow-lg overflow-hidden z-[100]"
+        style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;right:0"
         onclick="event.stopPropagation()"
       >
         <form hx-post="/logout" hx-swap="none">
           <button
             type="submit"
-            style="width:100%;display:flex;align-items:center;gap:8px;padding:12px 16px;border:none;background:none;cursor:pointer;font-size:13.5px;color:var(--ink);text-align:left"
-            onmouseover="this.style.background='var(--line-soft)'" onmouseout="this.style.background='none'"
+            class="w-full flex items-center gap-2 px-4 py-3 border-0 bg-transparent cursor-pointer text-[13.5px] text-base-content text-left hover:bg-base-300"
           >
             <Icon name="arrowLeft" size={14} />
             ログアウト
@@ -323,7 +329,7 @@ export const SidebarAddressItems: FC<{ addresses: string[] }> = ({ addresses }) 
     {addresses.map((addr) => (
       <a key={addr} href={`/?addr=${encodeURIComponent(addr)}`} class="nav-item">
         <span class="address-dot" />
-        <span class="nav-item-label" style="font-family:var(--font-mono)">
+        <span class="nav-item-label font-mono">
           {addr}
         </span>
       </a>

@@ -78,7 +78,7 @@ export const ComposeDrawerPartial: FC<{
       </div>
 
       <div class="compose-toolbar">
-        <button type="submit" class="btn-primary">
+        <button type="submit" class="btn btn-primary btn-sm gap-1.5">
           <Icon name="send" size={14} />
           送信
         </button>

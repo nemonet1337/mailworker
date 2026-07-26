@@ -21,7 +21,7 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
             </div>
             <div class="page-actions">
               <button
-                class="btn-primary"
+                class="btn btn-primary btn-sm gap-1.5"
                 onclick="document.getElementById('invite-dialog').style.display='flex'"
               >
                 <Icon name="plus" size={14} />
@@ -57,30 +57,29 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
                   <tr key={u.id} id={`user-row-${u.id}`} data-name={u.display_name.toLowerCase()} data-email={u.email.toLowerCase()} data-role={u.is_admin === 1 ? 'admin' : 'member'}>
                     <td>
                       <div style="display:flex;align-items:center;gap:10px">
-                        <div class="avatar" style="flex-shrink:0">
+                        <div class="avatar-circle shrink-0">
                           {u.display_name.split(/\s+/).map((w: string) => w[0] ?? '').join('').toUpperCase().slice(0, 2) || '?'}
                         </div>
-                        <span style="font-weight:500">{u.display_name}</span>
+                        <span class="font-medium">{u.display_name}</span>
                       </div>
                     </td>
-                    <td style="font-family:var(--font-mono);font-size:12.5px;color:var(--sub)">{u.email}</td>
+                    <td class="font-mono text-[12.5px] text-base-content/50">{u.email}</td>
                     <td>
                       {u.is_admin === 1 ? (
                         <span class="tag coral-soft">
-                          <Icon name="crown" size={10} stroke="var(--accent-deep)" strokeWidth={2.2} />
+                          <Icon name="crown" size={10} stroke="currentColor" strokeWidth={2.2} />
                           admin
                         </span>
                       ) : (
                         <span class="tag">member</span>
                       )}
                     </td>
-                    <td style="color:var(--sub);font-size:12.5px">{u.created_at.slice(0, 10)}</td>
+                    <td class="text-base-content/50 text-[12.5px]">{u.created_at.slice(0, 10)}</td>
                     <td class="col-actions">
                       <button
                         class="icon-btn"
                         title="パスワード変更"
                         onclick={`document.getElementById('pw-dialog-${u.id}').style.display='flex'`}
-                        style="color:var(--sub)"
                       >
                         <Icon name="key" size={15} />
                       </button>
@@ -92,7 +91,6 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
                           hx-target={`#user-row-${u.id}`}
                           hx-swap="outerHTML swap:0.3s"
                           hx-confirm="このユーザーを削除しますか？"
-                          style="color:var(--sub)"
                         >
                           <Icon name="trash" size={15} />
                         </button>
@@ -143,12 +141,12 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
             <div class="dialog-actions">
               <button
                 type="button"
-                class="btn-ghost"
+                class="btn btn-ghost btn-sm"
                 onclick="document.getElementById('invite-dialog').style.display='none'"
               >
                 キャンセル
               </button>
-              <button type="submit" class="btn-primary">作成</button>
+              <button type="submit" class="btn btn-primary btn-sm">作成</button>
             </div>
           </form>
         </div>
@@ -164,7 +162,7 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
         >
           <div class="dialog">
             <h3>パスワード変更</h3>
-            <p style="font-size:13px;color:var(--sub);margin-bottom:16px">{u.display_name} ({u.email})</p>
+            <p class="text-[13px] text-base-content/50 mb-4">{u.display_name} ({u.email})</p>
             <form
               hx-post={`/admin/users/${u.id}/password`}
               hx-target={`#pw-result-${u.id}`}
@@ -181,12 +179,12 @@ export const UsersPage: FC<{ currentUser: SessionUser; users: UserRow[] }> = ({
               <div class="dialog-actions">
                 <button
                   type="button"
-                  class="btn-ghost"
+                  class="btn btn-ghost btn-sm"
                   onclick={`document.getElementById('pw-dialog-${u.id}').style.display='none'`}
                 >
                   キャンセル
                 </button>
-                <button type="submit" class="btn-primary">変更</button>
+                <button type="submit" class="btn btn-primary btn-sm">変更</button>
               </div>
             </form>
           </div>
