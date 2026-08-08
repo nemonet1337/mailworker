@@ -53,10 +53,14 @@ max_batch_timeout = 5
 #   wrangler secret put VAPID_SUBJECT   (例: mailto:admin@yourdomain.com)
 # キーの生成: デプロイ後に /admin/vapid/generate にアクセス
 
-# メール送信 (Cloudflare Email Workers)
+# メール送信 (Cloudflare Email Workers / Email Sending)
 # Cloudflare ダッシュボードで Email Routing を有効にしてください
 [[send_email]]
 name = "SEND_EMAIL"
+
+# 予約送信: 毎分 due を処理 (デプロイ反映に最大 15 分かかる場合あり)
+[triggers]
+crons = ["* * * * *"]
 
 # レートリミッター (ブルートフォース対策)
 # namespace_id はこの Worker 内で一意な任意の正の整数 (ダッシュボードでの事前作成は不要)
@@ -82,3 +86,12 @@ invocation_logs = true
 enabled = true
 persist = true
 head_sampling_rate = 1
+
+[build]
+command = "npm run css"
+watch_dir = ["src", "styles"]
+
+[[rules]]
+type = "Text"
+globs = ["**/*.css"]
+fallthrough = true

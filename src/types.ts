@@ -18,7 +18,6 @@ export type AppEnv = {
   }
   Variables: {
     user?: SessionUser
-    isAuthed?: boolean
   }
 }
 
@@ -40,14 +39,20 @@ export type EmailRow = {
   is_trashed?: number
   folder?: string
   body_text?: string
+  scheduled_at?: string | null
+  send_attempts?: number
 }
 
-export type AttachmentRow = {
+export type MailDetail = {
   id: string
-  email_id: string
-  filename: string
-  content_type: string
-  size: number
-  r2_key: string
-  created_at: string
+  from_: string
+  to_address: string
+  subject: string
+  received_at: string
+  body_text: string
+  body_html: string | null
+  is_starred: number
+  is_trashed: number
+  folder: string
+  scheduled_at?: string | null
 }

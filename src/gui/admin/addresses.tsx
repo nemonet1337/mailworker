@@ -21,7 +21,7 @@ export const AddressesPage: FC<{
           </div>
           <div class="page-actions">
             <button
-              class="btn-primary"
+              class="btn btn-primary btn-sm gap-1.5"
               onclick="document.getElementById('add-addr-dialog').style.display='flex'"
             >
               <Icon name="plus" size={14} />
@@ -54,7 +54,7 @@ export const AddressesPage: FC<{
                     <div class="address-desc">{a.display_name} · {a.created_at.slice(0, 10)}</div>
                   </div>
                   <div class="address-state">
-                    <Icon name="chevronRight" size={14} stroke="var(--mid)" />
+                    <Icon name="chevronRight" size={14} stroke="currentColor" />
                   </div>
                 </div>
 
@@ -65,7 +65,7 @@ export const AddressesPage: FC<{
                     onclick={`toggleAddr('${a.id}')`}
                     style="cursor:pointer"
                   >
-                    <div class="address-icon" style="background:var(--coral);color:var(--white);border-color:var(--ink)">
+                    <div class="address-icon bg-primary text-primary-content border-primary">
                       <Icon name="at" size={18} />
                     </div>
                     <div class="address-info">
@@ -75,22 +75,21 @@ export const AddressesPage: FC<{
                       <div class="address-desc">{a.display_name}</div>
                     </div>
                     <div class="address-state">
-                      <Icon name="chevronDown" size={14} stroke="var(--mid)" />
+                      <Icon name="chevronDown" size={14} stroke="currentColor" />
                     </div>
                   </div>
                   <div class="address-detail">
                     <div>
                       <div class="detail-label">オーナー</div>
-                      <div style="font-size:13px;font-weight:500">{a.display_name}</div>
+                      <div class="text-[13px] font-medium">{a.display_name}</div>
                     </div>
                     <div>
                       <div class="detail-label">作成日</div>
-                      <div style="font-size:13px">{a.created_at.slice(0, 10)}</div>
+                      <div class="text-[13px]">{a.created_at.slice(0, 10)}</div>
                     </div>
-                    <div style="grid-column:span 2;display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--line-soft)">
+                    <div class="col-span-2 flex justify-end pt-2 border-t border-base-200">
                       <button
-                        class="btn-ghost"
-                        style="color:var(--red);border-color:var(--red)"
+                        class="btn btn-outline btn-error btn-sm gap-1.5"
                         hx-post={`/admin/addresses/${a.id}/delete`}
                         hx-target={`#addr-wrap-${a.id}`}
                         hx-swap="outerHTML swap:0.3s"
@@ -137,7 +136,7 @@ export const AddressesPage: FC<{
                 placeholder="username"
                 style="flex:1"
               />
-              <span style="font-size:14px;color:var(--sub);white-space:nowrap;font-family:var(--font-mono)">@{domain}</span>
+              <span class="text-sm text-base-content/50 whitespace-nowrap font-mono">@{domain}</span>
             </div>
           </div>
           <div class="form-field">
@@ -152,12 +151,12 @@ export const AddressesPage: FC<{
           <div class="dialog-actions">
             <button
               type="button"
-              class="btn-ghost"
+              class="btn btn-ghost btn-sm"
               onclick="document.getElementById('add-addr-dialog').style.display='none'"
             >
               キャンセル
             </button>
-            <button type="submit" class="btn-primary">追加</button>
+            <button type="submit" class="btn btn-primary btn-sm">追加</button>
           </div>
         </form>
       </div>

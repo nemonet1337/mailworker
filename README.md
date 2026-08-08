@@ -99,6 +99,11 @@ npm run dev
 
 ### 6. デプロイ
 
+本番は **Cloudflare Workers Builds**（リポジトリ連携）で自動デプロイします。  
+GitHub Actions からはデプロイしません。
+
+ローカルから手動で出す場合:
+
 ```bash
 # リモート DB にマイグレーションを適用してデプロイ
 npm run deploy
@@ -106,23 +111,11 @@ npm run deploy
 
 ---
 
-## GitHub Actions による自動デプロイ
-
-`main` ブランチへの push で自動的にデプロイされます。  
-以下の **Repository Secrets** を設定してください：
-
-| Secret 名 | 説明 |
-|-----------|------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API トークン (Workers 編集権限が必要) |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare アカウント ID |
-
----
-
 ## CI / セキュリティ
 
 | ワークフロー | 概要 |
 |-------------|------|
-| CI / Deploy | TypeScript 型チェック + Cloudflare Workers へのデプロイ |
+| CI | TypeScript 型チェック（デプロイはしない） |
 | CodeQL | TypeScript 静的解析 (毎週月曜 + PR) |
 | Security Scan | npm audit + Gitleaks シークレットスキャン (毎週月曜 + PR) |
 | Dependabot | npm・GitHub Actions の依存関係を毎週自動更新 |

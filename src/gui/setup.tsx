@@ -29,7 +29,7 @@ export const SetupPage: FC = () => (
         <div class="login-field">
           <label>表示名 / Display name</label>
           <input
-            class="underline-input"
+            class="input w-full"
             name="display_name"
             type="text"
             autocomplete="name"
@@ -42,7 +42,7 @@ export const SetupPage: FC = () => (
         <div class="login-field">
           <label>メール / Email</label>
           <input
-            class="underline-input"
+            class="input w-full"
             name="email"
             type="email"
             autocomplete="email"
@@ -54,7 +54,7 @@ export const SetupPage: FC = () => (
         <div class="login-field">
           <label>パスワード / Password</label>
           <input
-            class="underline-input"
+            class="input w-full"
             name="password"
             type="password"
             autocomplete="new-password"
@@ -63,7 +63,7 @@ export const SetupPage: FC = () => (
           />
         </div>
 
-        <button class="login-cta" type="submit">
+        <button class="btn btn-primary w-full mt-2" type="submit">
           Create account →
         </button>
       </form>
@@ -74,11 +74,11 @@ export const SetupPage: FC = () => (
 )
 
 export const SetupError: FC<{ title: string; desc?: string }> = ({ title, desc }) => (
-  <div class="login-error">
-    <span class="login-error-icon">!</span>
-    <div class="login-error-body">
-      <b>{title}</b>
-      {desc && <div>{desc}</div>}
+  <div class="alert alert-error mb-4" role="alert">
+    <span class="font-bold">!</span>
+    <div>
+      <div class="font-semibold">{title}</div>
+      {desc && <div class="text-xs opacity-80">{desc}</div>}
     </div>
   </div>
 )

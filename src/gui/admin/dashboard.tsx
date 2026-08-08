@@ -23,7 +23,7 @@ const Spark: FC<{ data: DailyCount[]; width?: number; height?: number }> = ({
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style="overflow:visible">
       <polygon points={poly} fill="oklch(0.94 0.035 30)" stroke="none" />
-      <polyline points={pts.join(' ')} fill="none" stroke="var(--coral)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline points={pts.join(' ')} fill="none" stroke="currentColor" class="text-primary" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   )
 }
@@ -137,16 +137,16 @@ export const DashboardPage: FC<{
                     <tr key={e.id}>
                       <td style="width:24px;padding:14px 8px 14px 16px">
                         {e.is_read === 0 && (
-                          <div style="width:6px;height:6px;border-radius:3px;background:var(--coral)" />
+                          <div class="w-1.5 h-1.5 rounded-full bg-primary" />
                         )}
                       </td>
-                      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                      <td class="max-w-[200px] truncate">
                         {e.from_}
                       </td>
-                      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">
+                      <td class="max-w-[300px] truncate font-medium">
                         {e.subject || '(件名なし)'}
                       </td>
-                      <td style="white-space:nowrap;color:var(--sub);font-size:12px">
+                      <td class="whitespace-nowrap text-base-content/50 text-xs">
                         {e.received_at.slice(0, 16).replace('T', ' ')}
                       </td>
                     </tr>
