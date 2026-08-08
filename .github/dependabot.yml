@@ -1,3 +1,4 @@
+# Cloudflare Workers + Hono + Tailwind/DaisyUI
 version: 2
 updates:
   - package-ecosystem: npm
@@ -8,14 +9,41 @@ updates:
       time: "09:00"
       timezone: Asia/Tokyo
     open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - npm
     groups:
       cloudflare:
         patterns:
           - "@cloudflare/*"
           - "wrangler"
+        update-types:
+          - minor
+          - patch
       hono:
         patterns:
           - "hono"
+          - "@hono/*"
+        update-types:
+          - minor
+          - patch
+      ui:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "daisyui"
+          - "heroicons"
+        update-types:
+          - minor
+          - patch
+      typescript-tooling:
+        patterns:
+          - "typescript"
+          - "tsx"
+          - "@types/*"
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: github-actions
     directory: /
@@ -25,3 +53,13 @@ updates:
       time: "09:00"
       timezone: Asia/Tokyo
     open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
